@@ -103,3 +103,9 @@ variable "scorer_zip_path" {
 variable "log_retention_days" {
   type = number
 }
+
+# Observability
+variable "alarm_email" {
+  description = "Receives alarm emails. AWS emails a confirmation link to this address after the first apply."
+  type        = string
+}
