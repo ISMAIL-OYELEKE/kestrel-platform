@@ -1,0 +1,68 @@
+# Deploys one environment: build, scan, push, terraform apply, then prove it works.
+# Called by deploy.yml. The job runs in the matching GitHub environment, and only a job in that
+# environment can assume that environment's AWS role (bootstrap/github-oidc.tf).
+name: deploy one environment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: deploy ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 60
+    env:
+      ENV: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: terraform/platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.6
+          terraform_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::768499314608:role/kestrel-github-deploy-${{ inputs.environment }}
+          aws-region: eu-west-1
+
+      - name: Image tag (the commit)
+        run: echo "TAG=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_ENV"
+      - name: Build the scorer package
+        run: ../../app/build-lambda.sh
+      - name: Terraform init
+        run: terraform init -input=false -backend-config="../envs/$ENV/backend.hcl"
+      # On a brand new environment the image repository must exist before an image can be pushed.
+      # On later runs this changes nothing.
+      - name: Create the image repository if needed
+        run: >-
+          terraform apply -input=false -auto-approve -var-file="../envs/$ENV/terraform.tfvars"
+          -var api_image_tag="$TAG" -target=module.api.aws_ecr_repository.api
+      - name: Build and push the API image
+        run: ../../app/push-image.sh "$ENV"
+      # Brief item 6.6: stop here if ECR's scan finds a critical vulnerability.
+      - name: Image scan gate
+        run: ../../scripts/scan-gate.sh "kestrel-$ENV-api" "$TAG"
+      - name: Terraform plan
+        run: terraform plan -input=false -var-file="../envs/$ENV/terraform.tfvars" -var api_image_tag="$TAG" -out=tfplan
+      - name: Terraform apply
+        run: terraform apply -input=false tfplan
+      # Brief item 7.4: if the new tasks never become healthy, ECS rolls back by itself
+      # (deployment circuit breaker). This step turns that rollback into a failed pipeline.
+      - name: Check the new version is running, not rolled back
+        run: ../../scripts/verify-deploy.sh
+      - name: Smoke test
+        run: ../../scripts/smoke-aws.sh

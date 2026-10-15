@@ -1,5 +1,6 @@
 # Records every accepted and rejected connection in the VPC (brief item 3.4).
 resource "aws_cloudwatch_log_group" "flow_logs" {
+  #checkov:skip=CKV_AWS_158:Logs never contain a BVN (masked by the JSON log formatter) and are encrypted at rest by CloudWatch; a customer managed key adds cost without protecting new data
   name              = "/kestrel/${var.name}/vpc-flow-logs"
   retention_in_days = var.flow_log_retention_days
 }

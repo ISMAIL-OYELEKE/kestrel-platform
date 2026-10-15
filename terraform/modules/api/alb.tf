@@ -1,4 +1,7 @@
 resource "aws_lb" "this" {
+  #checkov:skip=CKV_AWS_91:Access logs need a separate bucket; WAF metrics and app logs cover request tracing for now. Recommended for prod in the design document
+  #checkov:skip=CKV_AWS_150:Every environment is destroyed after each session (assessment rule R5); deletion protection would block terraform destroy
+  #checkov:skip=CKV2_AWS_76:False positive: the attached WAF uses AWSManagedRulesKnownBadInputsRuleSet (Log4j) through a dynamic block Checkov does not expand
   name               = var.name
   load_balancer_type = "application"
   internal           = false

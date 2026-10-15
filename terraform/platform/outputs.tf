@@ -46,3 +46,7 @@ output "decisions_topic_arn" {
 output "db_identifier" {
   value = module.database.identifier
 }
+
+output "api_task_definition_arn" {
+  value = module.api.task_definition_arn
+}

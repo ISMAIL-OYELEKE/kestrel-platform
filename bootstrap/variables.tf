@@ -32,3 +32,13 @@ variable "github_repo" {
   type        = string
   default     = "ISMAIL-OYELEKE/kestrel-platform"
 }
+
+# GitHub's OIDC token names the repository with permanent numeric IDs next to the names:
+# owner@owner_id/repo@repo_id. A deleted and re-created account or repository with the same name
+# gets new IDs, so it cannot take over these roles. Read from a refused sign in in CloudTrail
+# (15 Oct 2026); the IDs are also in the GitHub API (owner.id and id of the repository).
+variable "github_subject_repo" {
+  description = "Repository as GitHub writes it in the OIDC token's sub claim (owner@owner_id/repo@repo_id)."
+  type        = string
+  default     = "ISMAIL-OYELEKE@98213704/kestrel-platform@1420375935"
+}

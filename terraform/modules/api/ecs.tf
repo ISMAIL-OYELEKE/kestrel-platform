@@ -1,12 +1,19 @@
 data "aws_region" "current" {}
 
 resource "aws_cloudwatch_log_group" "api" {
+  #checkov:skip=CKV_AWS_158:Logs never contain a BVN (masked by the JSON log formatter) and are encrypted at rest by CloudWatch; a customer managed key adds cost without protecting new data
   name              = "/kestrel/${var.name}/api"
   retention_in_days = var.log_retention_days
 }
 
 resource "aws_ecs_cluster" "this" {
   name = var.name
+
+  # Per task CPU, memory and network metrics for the dashboard and for incident work.
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
 }
 
 data "aws_iam_policy_document" "ecs_tasks_assume" {

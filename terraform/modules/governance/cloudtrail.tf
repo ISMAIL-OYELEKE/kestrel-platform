@@ -1,5 +1,7 @@
 # One trail records management events from every region, including global services such as IAM.
 resource "aws_cloudtrail" "account" {
+  #checkov:skip=CKV_AWS_252:No one subscribes to per file delivery notifications; delivery errors show in the trail status
+  #checkov:skip=CKV2_AWS_10:Sending CloudTrail to CloudWatch Logs costs per GB; S3 with log file validation is the system of record and GuardDuty analyses the events
   name                          = local.trail_name
   s3_bucket_name                = aws_s3_bucket.logs.id
   kms_key_id                    = aws_kms_key.cloudtrail.arn

@@ -1,0 +1,70 @@
+# After a merge to main: run all checks, deploy to dev, then (once a person approves) to prod
+# (brief items 7.1 and 7.3). Only one deployment runs at a time.
+#
+# Two repository variables switch the environments on, so a push never rebuilds an environment
+# we destroyed to save money: DEV_ENABLED and PROD_ENABLED (Settings, Secrets and variables,
+# Actions, Variables). Set to true to deploy; delete or set to false after destroying.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - app/**
+      - terraform/**
+      - scripts/**
+      - .github/workflows/**
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  dev:
+    needs: checks
+    if: vars.DEV_ENABLED == 'true'
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: dev
+    permissions:
+      contents: read
+      id-token: write
+
+  # The prod gate. GitHub's "Required reviewers" setting is not available for private
+  # repositories on the free plan, so the approval is a GitHub issue that an approver answers
+  # with "approve" or "deny". See ADR 0009.
+  approve-prod:
+    needs: dev
+    if: vars.PROD_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      issues: write
+    steps:
+      - uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.token }}
+          approvers: ISMAIL-OYELEKE
+          minimum-approvals: 1
+          exclude-workflow-initiator-as-approver: false
+          issue-title: "Approve prod deployment of ${{ github.sha }}"
+          issue-body: |
+            Commit ${{ github.sha }} passed all checks and is running in dev.
+            Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Comment "approve" to deploy it to prod, or "deny" to stop.
+
+  prod:
+    needs: approve-prod
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: prod
+    permissions:
+      contents: read
+      id-token: write
