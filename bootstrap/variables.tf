@@ -26,3 +26,9 @@ variable "alert_email" {
   description = "Email address that receives budget alerts. Passed in at run time, never committed."
   type        = string
 }
+
+variable "github_repo" {
+  description = "GitHub repository (owner/name) whose Actions workflows may assume the deploy roles."
+  type        = string
+  default     = "ISMAIL-OYELEKE/kestrel-platform"
+}
