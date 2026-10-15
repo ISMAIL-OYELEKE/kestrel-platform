@@ -9,3 +9,4 @@ Screenshots and command output that prove a brief requirement is met. Each file 
 | budget-created.png | 15 Oct 2026, 09:51 WAT | Budget kestrel-assessment-usd-40 live before any other resource; October spend so far USD 0.24 (baseline) | Rule: budget first |
 | budget-alert-recipient.png | 15 Oct 2026, 09:51 WAT | Alert email is active and subscribed to all 5 budget alerts | Rule: budget first |
 | state-bucket-apply.png | 15 Oct 2026, 09:55 WAT | Terraform created the state bucket and its 6 protections (7 resources) | 2.1 |
+| state-migrated-to-s3.png | 15 Oct 2026, 09:59 WAT | After migration, plan reads state from S3 and shows no changes; state file present in the bucket | 2.1 |
