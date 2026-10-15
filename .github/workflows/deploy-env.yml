@@ -49,17 +49,19 @@ jobs:
       # On later runs this changes nothing.
       - name: Create the image repository if needed
         run: >-
-          terraform apply -input=false -auto-approve -var-file="../envs/$ENV/terraform.tfvars"
+          terraform apply -input=false -lock-timeout=5m -auto-approve -var-file="../envs/$ENV/terraform.tfvars"
           -var api_image_tag="$TAG" -target=module.api.aws_ecr_repository.api
       - name: Build and push the API image
         run: ../../app/push-image.sh "$ENV"
       # Brief item 6.6: stop here if ECR's scan finds a critical vulnerability.
       - name: Image scan gate
         run: ../../scripts/scan-gate.sh "kestrel-$ENV-api" "$TAG"
+      # -lock-timeout: if someone else holds the state lock (a local apply, for example),
+      # wait up to 5 minutes for it instead of failing at once.
       - name: Terraform plan
-        run: terraform plan -input=false -var-file="../envs/$ENV/terraform.tfvars" -var api_image_tag="$TAG" -out=tfplan
+        run: terraform plan -input=false -lock-timeout=5m -var-file="../envs/$ENV/terraform.tfvars" -var api_image_tag="$TAG" -out=tfplan
       - name: Terraform apply
-        run: terraform apply -input=false tfplan
+        run: terraform apply -input=false -lock-timeout=5m tfplan
       # Brief item 7.4: if the new tasks never become healthy, ECS rolls back by itself
       # (deployment circuit breaker). This step turns that rollback into a failed pipeline.
       - name: Check the new version is running, not rolled back
