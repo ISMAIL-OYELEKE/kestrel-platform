@@ -13,17 +13,18 @@ locals {
   oidc_host = "token.actions.githubusercontent.com"
 
   # Which GitHub workflow runs may assume each role. The "sub" claim in GitHub's
-  # token names the repo plus the pull request, branch or deployment environment.
+  # token names the repo (with its permanent IDs, see variables.tf) plus the pull
+  # request, branch or deployment environment.
   role_subjects = {
     # Read only: runs terraform plan on pull requests and on main.
     plan = [
-      "repo:${var.github_repo}:pull_request",
-      "repo:${var.github_repo}:ref:refs/heads/main",
+      "repo:${var.github_subject_repo}:pull_request",
+      "repo:${var.github_subject_repo}:ref:refs/heads/main",
     ]
     # Applies changes, only from jobs that target the matching GitHub environment.
-    # The prod environment requires a human approval in GitHub (brief item 7.3).
-    deploy-dev  = ["repo:${var.github_repo}:environment:dev"]
-    deploy-prod = ["repo:${var.github_repo}:environment:prod"]
+    # Prod deploys wait for a human approval in the pipeline (brief item 7.3, ADR 0009).
+    deploy-dev  = ["repo:${var.github_subject_repo}:environment:dev"]
+    deploy-prod = ["repo:${var.github_subject_repo}:environment:prod"]
   }
 }
 

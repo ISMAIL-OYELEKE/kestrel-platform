@@ -11,7 +11,7 @@ Brief item 6.1 forbids long lived AWS access keys anywhere, including CI/CD. Ite
 3. GitHub OIDC with separate roles: a read only plan role, and one deploy role per environment, each trusted only from its GitHub environment.
 
 ## Decision
-Option 3. Roles: `kestrel-github-plan` (ReadOnlyAccess plus the state lock file), `kestrel-github-deploy-dev` and `kestrel-github-deploy-prod` (AdministratorAccess). The trust policy checks the token audience and the exact `sub` claim: pull requests or `main` for plan, `environment:dev` or `environment:prod` for deploy. The prod GitHub environment requires a reviewer.
+Option 3. Roles: `kestrel-github-plan` (ReadOnlyAccess plus the state lock file), `kestrel-github-deploy-dev` and `kestrel-github-deploy-prod` (AdministratorAccess). The trust policy checks the token audience and the exact `sub` claim: pull requests or `main` for plan, `environment:dev` or `environment:prod` for deploy. GitHub writes the repository in `sub` with permanent numeric IDs (`ISMAIL-OYELEKE@98213704/kestrel-platform@1420375935`), so a re-created account or repository with the same name cannot assume these roles. Prod deploys also wait for a human approval in the pipeline (ADR 0009).
 
 ## Consequences
 - No secret is stored in GitHub. Credentials last one hour.
