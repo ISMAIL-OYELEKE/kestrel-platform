@@ -6,3 +6,4 @@ Screenshots and command output that prove a brief requirement is met. Each file 
 |------|----------|-------|------------|
 | iam-no-access-keys.png | 15 Oct 2026, 09:37 WAT | IAM user ISMAIL_OYELEKE has 0 access keys and 0 API keys | 6.1 |
 | aws-login-short-lived-credentials.png | 15 Oct 2026, 09:44 WAT | `aws login --remote` gives the codespace temporary credentials for IAM user ISMAIL_OYELEKE; no access key used | 6.1 |
+| budget-created.png | 15 Oct 2026, 09:51 WAT | Budget kestrel-assessment-usd-40 live before any other resource; October spend so far USD 0.24 (baseline) | Rule: budget first |
