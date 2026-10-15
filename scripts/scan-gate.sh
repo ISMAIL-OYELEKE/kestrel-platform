@@ -6,17 +6,49 @@ set -euo pipefail
 REPO=${1:?repository}
 TAG=${2:?tag}
 
-echo "Waiting for the ECR scan of $REPO:$TAG"
-aws ecr wait image-scan-complete --repository-name "$REPO" --image-id imageTag="$TAG"
+IMAGE=(--repository-name "$REPO" --image-id imageTag="$TAG")
 
-COUNTS=$(aws ecr describe-image-scan-findings --repository-name "$REPO" --image-id imageTag="$TAG" \
+# The scan record can take a few seconds to appear after the push, so poll instead of using
+# `aws ecr wait`, which gives up at once on ScanNotFoundException. If no scan has started after
+# 30 seconds, start one: ECR allows one manual scan per image per day.
+echo "Waiting for the ECR scan of $REPO:$TAG"
+STATUS=""
+for i in $(seq 1 60); do # up to 10 minutes
+  if STATUS=$(aws ecr describe-image-scan-findings "${IMAGE[@]}" --query 'imageScanStatus.status' --output text 2>scan.err); then
+    echo "Scan status: $STATUS"
+    case "$STATUS" in
+      COMPLETE | ACTIVE) break ;;
+      FAILED | UNSUPPORTED_IMAGE | SCAN_ELIGIBILITY_EXPIRED | FINDINGS_UNAVAILABLE)
+        echo "The image could not be scanned ($STATUS), so it cannot be cleared for deployment."
+        exit 1
+        ;;
+    esac
+  elif grep -q ScanNotFoundException scan.err; then
+    echo "No scan yet"
+    if [ "$i" -eq 3 ]; then
+      echo "Starting a scan"
+      aws ecr start-image-scan "${IMAGE[@]}" >/dev/null
+    fi
+  else
+    cat scan.err
+    exit 1
+  fi
+  sleep 10
+done
+rm -f scan.err
+if [ "$STATUS" != "COMPLETE" ] && [ "$STATUS" != "ACTIVE" ]; then
+  echo "Timed out waiting for the scan."
+  exit 1
+fi
+
+COUNTS=$(aws ecr describe-image-scan-findings "${IMAGE[@]}" \
   --query 'imageScanFindings.findingSeverityCounts' --output json)
 echo "Findings by severity: $COUNTS"
 
 CRITICAL=$(echo "$COUNTS" | python3 -c 'import json,sys; print((json.load(sys.stdin) or {}).get("CRITICAL", 0))')
 if [ "$CRITICAL" -gt 0 ]; then
   echo "Blocked: $CRITICAL critical vulnerabilities:"
-  aws ecr describe-image-scan-findings --repository-name "$REPO" --image-id imageTag="$TAG" \
+  aws ecr describe-image-scan-findings "${IMAGE[@]}" \
     --query 'imageScanFindings.findings[?severity==`CRITICAL`].[name,uri]' --output text
   exit 1
 fi
