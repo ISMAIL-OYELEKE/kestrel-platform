@@ -6,7 +6,10 @@ set -euo pipefail
 REPO=${1:?repository}
 TAG=${2:?tag}
 
+# --no-paginate: while a scan is still IN_PROGRESS the response has no findings list, and the
+# AWS CLI's automatic paging then crashes with "'NoneType' object does not support item assignment".
 IMAGE=(--repository-name "$REPO" --image-id imageTag="$TAG")
+FINDINGS=(aws ecr describe-image-scan-findings --no-paginate "${IMAGE[@]}")
 
 # The scan record can take a few seconds to appear after the push, so poll instead of using
 # `aws ecr wait`, which gives up at once on ScanNotFoundException. If no scan has started after
@@ -14,7 +17,7 @@ IMAGE=(--repository-name "$REPO" --image-id imageTag="$TAG")
 echo "Waiting for the ECR scan of $REPO:$TAG"
 STATUS=""
 for i in $(seq 1 60); do # up to 10 minutes
-  if STATUS=$(aws ecr describe-image-scan-findings "${IMAGE[@]}" --query 'imageScanStatus.status' --output text 2>scan.err); then
+  if STATUS=$("${FINDINGS[@]}" --query 'imageScanStatus.status' --output text 2>scan.err); then
     echo "Scan status: $STATUS"
     case "$STATUS" in
       COMPLETE | ACTIVE) break ;;
@@ -41,14 +44,14 @@ if [ "$STATUS" != "COMPLETE" ] && [ "$STATUS" != "ACTIVE" ]; then
   exit 1
 fi
 
-COUNTS=$(aws ecr describe-image-scan-findings "${IMAGE[@]}" \
+COUNTS=$("${FINDINGS[@]}" \
   --query 'imageScanFindings.findingSeverityCounts' --output json)
 echo "Findings by severity: $COUNTS"
 
 CRITICAL=$(echo "$COUNTS" | python3 -c 'import json,sys; print((json.load(sys.stdin) or {}).get("CRITICAL", 0))')
 if [ "$CRITICAL" -gt 0 ]; then
   echo "Blocked: $CRITICAL critical vulnerabilities:"
-  aws ecr describe-image-scan-findings "${IMAGE[@]}" \
+  "${FINDINGS[@]}" \
     --query 'imageScanFindings.findings[?severity==`CRITICAL`].[name,uri]' --output text
   exit 1
 fi
