@@ -1,0 +1,58 @@
+# Local stack: Postgres, an AWS emulator for SQS (moto), the API and the scorer worker.
+# Start: docker compose up --build    API: http://localhost:8000
+# The keys below are throwaway local values. In AWS, BVN protection uses KMS keys instead.
+x-app-env: &app-env
+  DATABASE_URL: postgresql://kestrel:kestrel@db:5432/kestrel
+  SQS_ENDPOINT_URL: http://aws:5000
+  QUEUE_URL: http://aws:5000/123456789012/kestrel-local-scoring
+  AWS_DEFAULT_REGION: eu-west-1
+  AWS_ACCESS_KEY_ID: local
+  AWS_SECRET_ACCESS_KEY: local
+  BVN_MODE: local
+  LOCAL_BVN_ENC_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+  LOCAL_BVN_MAC_KEY: "1111111111111111111111111111111111111111111111111111111111111111"
+
+services:
+  db:
+    image: public.ecr.aws/docker/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: kestrel
+      POSTGRES_PASSWORD: kestrel
+      POSTGRES_DB: kestrel
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kestrel"]
+      interval: 2s
+      retries: 20
+
+  aws:
+    build:
+      context: local
+      dockerfile: moto.Dockerfile
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/moto-api/')"]
+      interval: 3s
+      retries: 40
+
+  aws-init:
+    build: .
+    command: python local/create_queues.py
+    volumes: ["./local:/app/local:ro"]
+    environment: *app-env
+    depends_on:
+      aws: { condition: service_healthy }
+
+  api:
+    build: .
+    environment: *app-env
+    ports: ["8000:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+      aws-init: { condition: service_completed_successfully }
+
+  worker:
+    build: .
+    command: python -m kestrel.local_worker
+    environment: *app-env
+    depends_on:
+      api: { condition: service_started }

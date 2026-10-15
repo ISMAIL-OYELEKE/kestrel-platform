@@ -1,0 +1,7 @@
+# Exact versions so every build installs the same code (brief item 2.3 applies to the app too).
+fastapi==0.143.1
+uvicorn==0.54.0
+psycopg[binary,pool]==3.3.6
+psycopg-pool==3.3.3
+boto3==1.43.114
+cryptography==50.0.2

@@ -1,0 +1,14 @@
+line-length = 120
+target-version = "py313"
+
+[lint]
+# Errors, pyflakes, import order, bugbear, and security checks (bandit rules).
+select = ["E", "F", "I", "B", "S"]
+ignore = ["S101"]  # assert is how pytest works
+
+[lint.per-file-ignores]
+"tests/*" = ["S105", "S106"]  # fixed test keys are not secrets
+
+[lint.isort]
+known-first-party = ["kestrel"]
+known-local-folder = ["conftest"]
