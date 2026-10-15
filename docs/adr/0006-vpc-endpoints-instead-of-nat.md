@@ -30,4 +30,4 @@ Use an S3 gateway endpoint (free) and seven interface endpoints: `ecr.api`, `ecr
 
 - Any new AWS service the code calls needs its endpoint added here, or the call times out. That is a deliberate checkpoint.
 - Calling a third party API on the internet (for example a credit bureau) would need a NAT gateway, or better an egress proxy with an allow list. That is a future decision.
-- The endpoint security group allows HTTPS from the whole VPC range. Incident ticket 5 shows tasks failing to start after this rule was tightened, so it is kept simple on purpose.
+- The endpoint security group allows HTTPS from the whole VPC range. Incident ticket 4 shows tasks failing to start after this rule was tightened, so it is kept simple on purpose.
