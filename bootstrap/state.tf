@@ -4,6 +4,10 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "tfstate" {
+  #checkov:skip=CKV_AWS_18:Every API call on the state bucket is recorded by CloudTrail
+  #checkov:skip=CKV_AWS_144:Cross region copy is restricted by rule R1; versioning protects against bad writes
+  #checkov:skip=CKV_AWS_145:AES-256 default encryption keeps the bootstrap free of a KMS key it would need before it exists
+  #checkov:skip=CKV2_AWS_62:Nothing needs to react to state changes
   # Bucket names are global across all AWS accounts, so the account ID keeps ours unique.
   bucket = "kestrel-tfstate-${data.aws_caller_identity.current.account_id}"
 
@@ -67,6 +71,7 @@ resource "aws_s3_bucket_policy" "tfstate" {
 
 # Old state versions are kept for 30 days, then deleted, to keep storage cost near zero.
 resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
+  #checkov:skip=CKV_AWS_300:Terraform writes state with a single PutObject, never a multipart upload
   bucket = aws_s3_bucket.tfstate.id
   rule {
     id     = "expire-old-state-versions"

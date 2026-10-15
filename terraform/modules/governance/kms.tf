@@ -12,6 +12,9 @@ resource "aws_kms_alias" "cloudtrail" {
 }
 
 data "aws_iam_policy_document" "cloudtrail_key" {
+  #checkov:skip=CKV_AWS_109:False positive: in a key policy, Resource * means this key only
+  #checkov:skip=CKV_AWS_111:False positive: in a key policy, Resource * means this key only
+  #checkov:skip=CKV_AWS_356:False positive: in a key policy, Resource * means this key only
   # Lets IAM policies in this account manage the key. Without it the key could become unmanageable.
   statement {
     sid       = "EnableIamPolicies"
