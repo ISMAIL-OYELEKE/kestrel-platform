@@ -44,7 +44,9 @@ jobs:
         run: |
           terraform init -input=false -backend-config=../envs/${{ matrix.environment }}/backend.hcl
           set +e
-          terraform plan -input=false -no-color -detailed-exitcode \
+          # A pull request plan only reads state, so it takes no lock. Otherwise a plan on an open
+          # pull request can hold the lock while a deploy on main tries to plan, and the deploy fails.
+          terraform plan -input=false -no-color -detailed-exitcode -lock=false \
             -var-file=../envs/${{ matrix.environment }}/terraform.tfvars \
             -var api_image_tag="${HEAD_SHA::12}" \
             > plan.txt 2>&1
