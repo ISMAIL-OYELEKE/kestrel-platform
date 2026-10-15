@@ -15,3 +15,4 @@ Screenshots and command output that prove a brief requirement is met. Each file 
 | cloudtrail-plan.png | 15 Oct 2026, 10:27 WAT | Account stack plan: 10 resources to add; only ISMAIL_OYELEKE is a log admin | 1.2 |
 | cloudtrail-apply-and-write-denied.png | 15 Oct 2026, 10:29 WAT | CloudTrail stack applied (10 resources); the admin user is refused s3:PutObject on the log bucket by an explicit deny in the bucket policy | 1.2 |
 | cloudtrail-delivering.png | 15 Oct 2026, 10:42 WAT | Trail status: logging on, first log file delivered 09:41 UTC, no delivery error (bucket policy and KMS key policy work) | 1.2 |
+| app-local-smoke-test.png | 15 Oct 2026, 10:46 WAT | Local stack: health ok; Ada (3x salary) APPROVED, Bayo (9x) DECLINED; request IDs smoke-ada and smoke-bayo reach the worker; BVN appears 0 times in logs and in no response | A1 to A5, 8.1 |
