@@ -50,3 +50,7 @@ output "db_identifier" {
 output "api_task_definition_arn" {
   value = module.api.task_definition_arn
 }
+
+output "dashboard_name" {
+  value = module.observability.dashboard_name
+}

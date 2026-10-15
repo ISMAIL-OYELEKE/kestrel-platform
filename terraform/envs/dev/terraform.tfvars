@@ -19,3 +19,5 @@ waf_rate_limit = 2000
 scorer_max_concurrency = 2
 
 log_retention_days = 7
+
+alarm_email = "ismailoyeleke2003@gmail.com"
