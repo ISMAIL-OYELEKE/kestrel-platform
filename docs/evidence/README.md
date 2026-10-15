@@ -11,3 +11,4 @@ Screenshots and command output that prove a brief requirement is met. Each file 
 | state-bucket-apply.png | 15 Oct 2026, 09:55 WAT | Terraform created the state bucket and its 6 protections (7 resources) | 2.1 |
 | state-migrated-to-s3.png | 15 Oct 2026, 09:59 WAT | After migration, plan reads state from S3 and shows no changes; state file present in the bucket | 2.1 |
 | github-oidc-roles-apply.png | 15 Oct 2026, 10:07 WAT | Three GitHub OIDC roles created (plan, deploy-dev, deploy-prod); no access keys involved | 6.1, 7.2, 7.3 |
+| github-environments.png | 15 Oct 2026, 10:24 WAT | GitHub environments dev and prod created; prod limited to the main branch (Required reviewers is not offered on a free private repo, see 7.3 deviation) | 7.3 |
