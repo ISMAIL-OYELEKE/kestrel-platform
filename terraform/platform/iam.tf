@@ -55,6 +55,27 @@ data "aws_iam_policy_document" "api" {
     actions   = ["sqs:SendMessage"]
     resources = [module.messaging.queue_arn]
   }
+
+  # Data perimeter: these credentials only work from inside our VPC (every call the API makes goes
+  # through a VPC endpoint). If they are stolen and used from anywhere else, every call is denied
+  # (incident ticket 5). Calls AWS services make on our behalf, such as Secrets Manager asking KMS to
+  # decrypt the secret, are exempt because they do not come from our VPC.
+  statement {
+    sid       = "DenyOutsideOurVpc"
+    effect    = "Deny"
+    actions   = ["*"]
+    resources = ["*"]
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:SourceVpc"
+      values   = [module.network.vpc_id]
+    }
+    condition {
+      test     = "Bool"
+      variable = "aws:ViaAWSService"
+      values   = ["false"]
+    }
+  }
 }
 
 data "aws_iam_policy_document" "worker" {
