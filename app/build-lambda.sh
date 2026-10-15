@@ -16,13 +16,20 @@ python3 -m pip install --quiet --target build \
 cp -r src/kestrel build/
 find build -name '__pycache__' -type d -prune -exec rm -rf {} +
 
+# Fixed timestamps, permissions and file order make the zip byte for byte identical for the same
+# code, so Terraform (and the pipeline's plan) only sees a change when the code really changes.
 python3 - <<'PY'
 import os, zipfile
 with zipfile.ZipFile("dist/scorer.zip", "w", zipfile.ZIP_DEFLATED) as z:
-    for root, _, files in os.walk("build"):
+    for root, dirs, files in os.walk("build"):
+        dirs.sort()
         for f in sorted(files):
             path = os.path.join(root, f)
-            z.write(path, os.path.relpath(path, "build"))
+            info = zipfile.ZipInfo(os.path.relpath(path, "build"), date_time=(1980, 1, 1, 0, 0, 0))
+            info.external_attr = 0o644 << 16
+            info.compress_type = zipfile.ZIP_DEFLATED
+            with open(path, "rb") as fh:
+                z.writestr(info, fh.read())
 PY
 rm -rf build
 echo "built app/dist/scorer.zip ($(du -h dist/scorer.zip | cut -f1))"
