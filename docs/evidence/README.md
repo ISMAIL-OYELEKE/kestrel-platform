@@ -2,6 +2,8 @@
 
 Screenshots and command output that prove a brief requirement is met. Each file is listed with the date it was captured and the requirement it supports.
 
+Screenshots are cropped to the browser's address bar and page only; the browser tabs and the Windows taskbar are removed. The capture time in the table comes from the taskbar clock in the original, which is kept in the git history.
+
 | File | Captured | Shows | Brief item |
 |------|----------|-------|------------|
 | iam-no-access-keys.png | 15 Oct 2026, 09:37 WAT | IAM user ISMAIL_OYELEKE has 0 access keys and 0 API keys | 6.1 |
