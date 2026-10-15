@@ -4,3 +4,10 @@ module "governance" {
   source      = "../modules/governance"
   name_prefix = "kestrel"
 }
+
+# GuardDuty, Security Hub and the AWS Config recorder Security Hub needs (brief item 6.5).
+# Account wide, so they live here and not in the per environment stack.
+module "security" {
+  source      = "../modules/security"
+  name_prefix = "kestrel"
+}
