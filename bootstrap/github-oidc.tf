@@ -2,9 +2,11 @@
 # stored access keys (brief item 6.1). GitHub proves which repo, branch or
 # environment a workflow runs in, and AWS only trusts the exact ones listed here.
 
-resource "aws_iam_openid_connect_provider" "github" {
-  url            = "https://token.actions.githubusercontent.com"
-  client_id_list = ["sts.amazonaws.com"]
+# The GitHub OIDC provider already existed in this account before the project
+# (an account can hold only one per URL). It is read here, not managed, so the
+# final terraform destroy does not remove something other work may rely on.
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
 }
 
 locals {
@@ -33,7 +35,7 @@ data "aws_iam_policy_document" "github_trust" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github.arn]
+      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
     }
 
     # The token must be meant for AWS STS.
