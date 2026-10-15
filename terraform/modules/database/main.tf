@@ -8,9 +8,11 @@ resource "aws_db_parameter_group" "this" {
   family = "postgres16"
 
   # Refuse any connection that is not encrypted with TLS.
+  # AWS records this parameter as pending-reboot, so we say the same to avoid a change on every plan.
   parameter {
-    name  = "rds.force_ssl"
-    value = "1"
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot"
   }
 }
 
