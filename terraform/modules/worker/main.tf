@@ -33,13 +33,38 @@ resource "aws_iam_role_policy" "scorer" {
   policy = var.policy_json
 }
 
+data "aws_caller_identity" "current" {}
+
+# The package is uploaded to S3 and Lambda reads it from there. Sending a multi megabyte zip inside
+# the CreateFunction request itself failed in practice ("bufio.Scanner: token too long", 15 Oct).
+resource "aws_s3_bucket" "artifacts" {
+  bucket        = "${var.name}-artifacts-${data.aws_caller_identity.current.account_id}"
+  force_destroy = true
+}
+
+resource "aws_s3_bucket_public_access_block" "artifacts" {
+  bucket                  = aws_s3_bucket.artifacts.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_object" "scorer" {
+  bucket = aws_s3_bucket.artifacts.id
+  # The content hash in the key means a new package is a new object, so Lambda always sees a change.
+  key    = "scorer/${filemd5(var.zip_path)}.zip"
+  source = var.zip_path
+}
+
 resource "aws_lambda_function" "scorer" {
   function_name    = "${var.name}-scorer"
   role             = aws_iam_role.scorer.arn
   runtime          = "python3.13"
   architectures    = ["x86_64"]
   handler          = "kestrel.scorer.handler"
-  filename         = var.zip_path
+  s3_bucket        = aws_s3_object.scorer.bucket
+  s3_key           = aws_s3_object.scorer.key
   source_code_hash = filebase64sha256(var.zip_path)
   timeout          = var.timeout_seconds
   memory_size      = var.memory_mb
