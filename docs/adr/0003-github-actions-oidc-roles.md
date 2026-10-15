@@ -17,3 +17,4 @@ Option 3. Roles: `kestrel-github-plan` (ReadOnlyAccess plus the state lock file)
 - No secret is stored in GitHub. Credentials last one hour.
 - A pull request, even from a branch, can only plan. It cannot change anything.
 - The deploy roles are broad because Terraform creates IAM roles, KMS keys and networking. This is a conscious trade off: the blast radius is limited by who can assume the role, not by what it can do. For the client, the next step is a permissions boundary or a scoped deploy policy built from CloudTrail activity. Brief item 6.2 (least privilege) is applied fully to the application's own ECS task and Lambda roles.
+- The account already had a GitHub OIDC provider (found when the first apply returned EntityAlreadyExists). An account can hold only one provider per URL, so Terraform reads it as a data source instead of managing it. Teardown leaves it in place; it costs nothing. This is the documented manual bootstrap item the brief allows.
