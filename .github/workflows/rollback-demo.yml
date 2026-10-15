@@ -1,0 +1,102 @@
+# Proves that a failed deployment rolls back by itself (brief item 7.4). Run by hand from the
+# Actions tab. It deploys a deliberately broken image, watches ECS's deployment circuit breaker
+# roll the service back to the working version, then redeploys the working version so Terraform's
+# state matches what is running again. The job is green only if the rollback happened.
+name: rollback demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to run the demo in
+        type: choice
+        options: [dev, prod]
+        default: dev
+
+# Shares the deploy queue, so the demo never overlaps a real deployment.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  demo:
+    name: rollback demo (${{ inputs.environment }})
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 60
+    env:
+      ENV: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: terraform/platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.6
+          terraform_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::768499314608:role/kestrel-github-deploy-${{ inputs.environment }}
+          aws-region: eu-west-1
+      - name: Build the scorer package
+        run: ../../app/build-lambda.sh
+      - name: Terraform init
+        run: terraform init -input=false -backend-config="../envs/$ENV/backend.hcl"
+
+      - name: Find the version that is running now
+        run: |
+          CLUSTER=$(terraform output -raw ecs_cluster_name)
+          SERVICE=$(terraform output -raw ecs_service_name)
+          TASKDEF=$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE" \
+            --query 'services[0].taskDefinition' --output text)
+          IMAGE=$(aws ecs describe-task-definition --task-definition "$TASKDEF" \
+            --query 'taskDefinition.containerDefinitions[0].image' --output text)
+          echo "Running now: ${TASKDEF##*/} with image ${IMAGE##*/}"
+          {
+            echo "GOOD_IMAGE=$IMAGE"
+            echo "GOOD_TAG=${IMAGE##*:}"
+            echo "BROKEN_TAG=broken-${GITHUB_RUN_ID}"
+          } >> "$GITHUB_ENV"
+
+      # The broken image is the working image with its start command replaced by one that exits
+      # at once, so the container can never pass its health check.
+      - name: Build and push a deliberately broken image
+        run: |
+          REGISTRY=${GOOD_IMAGE%%/*}
+          aws ecr get-login-password | docker login --username AWS --password-stdin "$REGISTRY"
+          BROKEN=${GOOD_IMAGE%:*}:$BROKEN_TAG
+          printf 'FROM %s\nCMD ["python", "-c", "raise SystemExit(\\"deliberately broken image for the rollback demo\\")"]\n' \
+            "$GOOD_IMAGE" | docker build -t "$BROKEN" -
+          docker push "$BROKEN"
+
+      - name: Deploy the broken image
+        run: |
+          terraform apply -input=false -lock-timeout=5m -auto-approve \
+            -var-file="../envs/$ENV/terraform.tfvars" -var api_image_tag="$BROKEN_TAG"
+
+      - name: Expect ECS to roll back to the working version
+        run: |
+          if ../../scripts/verify-deploy.sh; then
+            echo "The broken image is running, so the rollback did not happen. Demo failed."
+            exit 1
+          fi
+          echo "As expected: the broken version never became healthy and ECS rolled back."
+
+      # Terraform's state still records the broken task definition, so deploy the working
+      # version again. Runs even if an earlier step failed, so the environment is never left broken.
+      - name: Redeploy the working version
+        if: always() && env.GOOD_TAG != ''
+        run: |
+          terraform apply -input=false -lock-timeout=5m -auto-approve \
+            -var-file="../envs/$ENV/terraform.tfvars" -var api_image_tag="$GOOD_TAG"
+          ../../scripts/verify-deploy.sh
+      - name: Smoke test
+        run: ../../scripts/smoke-aws.sh
