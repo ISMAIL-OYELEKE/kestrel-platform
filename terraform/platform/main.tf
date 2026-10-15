@@ -100,3 +100,18 @@ module "worker" {
     NOTIFY_TOPIC_ARN = module.messaging.topic_arn
   }
 }
+
+module "observability" {
+  source                  = "../modules/observability"
+  name                    = local.name
+  alarm_email             = var.alarm_email
+  runbook_url             = "https://github.com/ISMAIL-OYELEKE/kestrel-platform/blob/main/docs/runbook.md"
+  alb_arn_suffix          = module.api.alb_arn_suffix
+  target_group_arn_suffix = module.api.target_group_arn_suffix
+  ecs_cluster_name        = module.api.cluster_name
+  ecs_service_name        = module.api.service_name
+  queue_name              = module.messaging.queue_name
+  dlq_name                = module.messaging.dlq_name
+  scorer_function_name    = module.worker.function_name
+  db_identifier           = module.database.identifier
+}
