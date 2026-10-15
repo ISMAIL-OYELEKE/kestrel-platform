@@ -1,0 +1,17 @@
+# Terraform: local working files and state (state lives in S3, never in Git)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# Secrets and local environment files must never be committed
+.env
+.env.*
+*.pem
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
