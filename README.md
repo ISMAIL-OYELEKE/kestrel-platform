@@ -115,6 +115,7 @@ After the first manual deployment, changes go through pull requests. See ADR 000
 2. Open a pull request. Checks run (lint, tests, Terraform validation, Checkov), and the Terraform plan for dev and prod appears as a comment on the pull request.
 3. Merge. The `deploy` workflow deploys dev, then opens an issue titled "Approve prod deployment of ...". Comment `approve` on it to deploy prod, or `deny` to stop.
 4. If a new version never becomes healthy, ECS rolls back by itself and the pipeline fails at "Check the new version is running".
+5. To see the rollback happen, run the `rollback demo` workflow from the Actions tab (Run workflow, choose the environment). It deploys a deliberately broken image, checks that ECS rolled back to the working version, then redeploys the working version. It takes about 15 minutes.
 
 Checkov findings that were accepted are skipped in the code, next to the resource, with the reason (`#checkov:skip=ID:reason`). The `checkov` job lists them all.
 
