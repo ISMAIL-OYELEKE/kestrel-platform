@@ -8,14 +8,20 @@ Each control gets one of three outcomes:
 - **Accept**: we keep the design on purpose; the reason is written here.
 - **Out of scope**: the control checks something Kestrel does not use.
 
-## HIGH
+## GuardDuty
+
+GuardDuty had **no findings** on 15 Oct 2026 at 18:17 WAT, about 80 minutes after it was turned on (evidence/guardduty-findings-none.png, evidence/guardduty-summary.png): 0 attack sequences, 0 Critical, 0 High, 0 Medium. That is expected for a new, quiet account. The k6 load test from a single Codespace address at 17:45 WAT did not raise a finding, because a burst of HTTPS requests to our own load balancer is not a GuardDuty threat pattern; the WAF rate rule is what guards against that.
+
+If GuardDuty raises a finding later, the first step is the same as any alarm: open the finding, note the resource and the time, and follow the leaked credentials playbook in docs/incidents.md (ticket 5) when an IAM principal is involved.
+
+## Security Hub: HIGH
 
 | Control | What it checks | Outcome | Why |
 |---|---|---|---|
 | GuardDuty.7, GuardDuty.11 | GuardDuty EKS and general Runtime Monitoring | Accept | Paid per vCPU add-on. GuardDuty threat detection on CloudTrail, VPC Flow Logs and DNS is on. Runtime Monitoring is a sensible step for the client once the platform carries real customer data |
 | Inspector.1 to Inspector.4 | Amazon Inspector scanning of EC2, ECR and Lambda | Accept | Paid per image and per function. ECR basic scanning runs on every push and the pipeline blocks any CRITICAL vulnerability (`scripts/scan-gate.sh`, item 6.6). There is no EC2 at all. Inspector is the upgrade path if the client wants continuous rescans of images already deployed |
 
-## MEDIUM
+## Security Hub: MEDIUM
 
 | Control | What it checks | Outcome | Why |
 |---|---|---|---|
