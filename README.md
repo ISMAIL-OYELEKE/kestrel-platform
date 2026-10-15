@@ -13,7 +13,8 @@ This guide lets a small team deploy everything from an empty AWS account, and re
 | `terraform/modules/` | Reusable building blocks | Used by the stacks |
 | `terraform/platform/` | The one root module for an environment: network, database, API, queue, scorer | A person now, the pipeline later |
 | `terraform/envs/` | Only the settings (`terraform.tfvars`) and state location (`backend.hcl`) for dev and prod | |
-| `scripts/` | Smoke test against a deployed environment | |
+| `scripts/` | Smoke test, image scan gate and rollback check, used by the pipeline | |
+| `.github/workflows/` | CI, Terraform plan on pull requests, deployment with prod approval | GitHub Actions |
 | `app/` | Loan API and scorer (Python), Dockerfile, local Docker Compose stack | The pipeline |
 | `docs/adr/` | Architecture decision records: why things are built this way | |
 | `docs/evidence/` | Screenshots proving each requirement | |
@@ -103,6 +104,19 @@ Dev and prod use the same code in `terraform/platform`. Only the files in `terra
    ```
 
 There is no domain yet, so the load balancer uses a self signed certificate. `terraform output -raw certificate_pem` gives the certificate to trust it. See ADR 0008 for what changes when a domain is provided.
+
+## Step 6: the pipeline (GitHub Actions)
+
+After the first manual deployment, changes go through pull requests. See ADR 0009 for the design.
+
+1. In the repository, Settings, Secrets and variables, Actions, Variables, add `DEV_ENABLED` = `true`. Add `PROD_ENABLED` = `true` only when prod should exist. There are no secrets to add: the workflows sign in to AWS with OIDC.
+2. Open a pull request. Checks run (lint, tests, Terraform validation, Checkov), and the Terraform plan for dev and prod appears as a comment on the pull request.
+3. Merge. The `deploy` workflow deploys dev, then opens an issue titled "Approve prod deployment of ...". Comment `approve` on it to deploy prod, or `deny` to stop.
+4. If a new version never becomes healthy, ECS rolls back by itself and the pipeline fails at "Check the new version is running".
+
+Checkov findings that were accepted are skipped in the code, next to the resource, with the reason (`#checkov:skip=ID:reason`). The `checkov` job lists them all.
+
+After destroying an environment, set its variable to `false` so the next merge does not rebuild it.
 
 ## Removing everything
 
