@@ -14,3 +14,4 @@ Screenshots and command output that prove a brief requirement is met. Each file 
 | github-environments.png | 15 Oct 2026, 10:24 WAT | GitHub environments dev and prod created; prod limited to the main branch (Required reviewers is not offered on a free private repo, see 7.3 deviation) | 7.3 |
 | cloudtrail-plan.png | 15 Oct 2026, 10:27 WAT | Account stack plan: 10 resources to add; only ISMAIL_OYELEKE is a log admin | 1.2 |
 | cloudtrail-apply-and-write-denied.png | 15 Oct 2026, 10:29 WAT | CloudTrail stack applied (10 resources); the admin user is refused s3:PutObject on the log bucket by an explicit deny in the bucket policy | 1.2 |
+| cloudtrail-delivering.png | 15 Oct 2026, 10:42 WAT | Trail status: logging on, first log file delivered 09:41 UTC, no delivery error (bucket policy and KMS key policy work) | 1.2 |
