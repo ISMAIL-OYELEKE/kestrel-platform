@@ -50,7 +50,7 @@ Logs never contain a full BVN; the JSON log formatter masks it.
 
 ## api-p95-latency
 
-**Meaning.** The slowest 5% of API responses took longer than the threshold for 3 periods in a row. Users are waiting, even if nothing has failed yet.
+**Meaning.** The slowest 5% of API responses took longer than the threshold in 3 of the last 5 one minute periods. Users are waiting, even if nothing has failed yet.
 
 **Confirm**
 
