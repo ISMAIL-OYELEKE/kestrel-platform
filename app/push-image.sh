@@ -22,6 +22,13 @@ if aws ecr describe-images --region "$REGION" --repository-name "kestrel-$ENV-ap
 else
   # The login token comes from the current short lived AWS session and expires after 12 hours.
   aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+  # The base image comes from ECR Public. Anonymous pulls share a data limit per IP address, and
+  # GitHub's runners share IP addresses, so a pull can fail with "429 Too Many Requests".
+  # Logged in pulls get their own, much higher limit. ECR Public only issues tokens from us-east-1;
+  # this creates nothing there. If the login fails, the build still tries an anonymous pull.
+  aws ecr-public get-login-password --region us-east-1 \
+    | docker login --username AWS --password-stdin public.ecr.aws \
+    || echo "ECR Public login failed, pulling the base image anonymously." >&2
   docker build --platform linux/amd64 -t "$REPO:$TAG" .
   docker push "$REPO:$TAG"
 fi
