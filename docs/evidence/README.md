@@ -13,3 +13,4 @@ Screenshots and command output that prove a brief requirement is met. Each file 
 | github-oidc-roles-apply.png | 15 Oct 2026, 10:07 WAT | Three GitHub OIDC roles created (plan, deploy-dev, deploy-prod); no access keys involved | 6.1, 7.2, 7.3 |
 | github-environments.png | 15 Oct 2026, 10:24 WAT | GitHub environments dev and prod created; prod limited to the main branch (Required reviewers is not offered on a free private repo, see 7.3 deviation) | 7.3 |
 | cloudtrail-plan.png | 15 Oct 2026, 10:27 WAT | Account stack plan: 10 resources to add; only ISMAIL_OYELEKE is a log admin | 1.2 |
+| cloudtrail-apply-and-write-denied.png | 15 Oct 2026, 10:29 WAT | CloudTrail stack applied (10 resources); the admin user is refused s3:PutObject on the log bucket by an explicit deny in the bucket policy | 1.2 |
