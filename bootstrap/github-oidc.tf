@@ -88,6 +88,7 @@ resource "aws_iam_role_policy" "plan_state_lock" {
 # workflow job in the matching GitHub environment can assume them, prod needs a
 # human approval, and the credentials last one hour. See ADR 0003.
 resource "aws_iam_role_policy_attachment" "deploy_admin" {
+  #checkov:skip=CKV_AWS_274:Deploy roles create IAM roles and every other resource type; contained by the OIDC trust policy (environment only), the prod approval step and one hour sessions. See ADR 0003
   for_each = toset(["deploy-dev", "deploy-prod"])
 
   role       = aws_iam_role.github[each.key].name

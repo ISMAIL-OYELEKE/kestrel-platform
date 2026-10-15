@@ -16,7 +16,17 @@ resource "aws_db_parameter_group" "this" {
   }
 }
 
+# Created here, not by RDS, so it has a retention period and is removed by terraform destroy.
+resource "aws_cloudwatch_log_group" "postgresql" {
+  #checkov:skip=CKV_AWS_158:Database logs hold errors and connection events, not row data; encrypted at rest by CloudWatch
+  name              = "/aws/rds/instance/${var.name}/postgresql"
+  retention_in_days = var.log_retention_days
+}
+
 resource "aws_db_instance" "this" {
+  #checkov:skip=CKV_AWS_161:Brief 5.3 allows Secrets Manager with rotation or IAM auth; we use the RDS managed, rotating secret
+  #checkov:skip=CKV_AWS_118:Enhanced monitoring needs an extra role and costs per instance; CloudWatch RDS metrics feed the dashboard and alarms
+  #checkov:skip=CKV_AWS_353:Performance Insights is a prod recommendation in the design document; not needed for the assessment workload
   identifier     = var.name
   engine         = "postgres"
   engine_version = "16"
@@ -53,4 +63,8 @@ resource "aws_db_instance" "this" {
   skip_final_snapshot        = var.skip_final_snapshot
   final_snapshot_identifier  = var.skip_final_snapshot ? null : "${var.name}-final"
   apply_immediately          = true
+
+  # Database errors and failed logins go to CloudWatch Logs (brief item 8, DB health).
+  enabled_cloudwatch_logs_exports = ["postgresql"]
+  depends_on                      = [aws_cloudwatch_log_group.postgresql]
 }
