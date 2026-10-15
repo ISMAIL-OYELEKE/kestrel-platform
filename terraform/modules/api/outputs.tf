@@ -34,3 +34,8 @@ output "certificate_pem" {
   description = "Public certificate to trust when calling the API (null when a real certificate is used)."
   value       = local.create_certificate ? tls_self_signed_cert.self_signed[0].cert_pem : null
 }
+
+output "task_definition_arn" {
+  description = "The task definition this apply deployed. The pipeline checks ECS is really running it."
+  value       = aws_ecs_task_definition.api.arn
+}
