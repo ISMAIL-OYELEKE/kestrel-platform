@@ -1,5 +1,6 @@
 """Creates the scoring queue and its dead-letter queue in the local AWS emulator (moto).
 In AWS the same queues are created by Terraform; this script is only for Docker Compose."""
+
 import json
 import os
 

@@ -167,6 +167,12 @@ def create_app(
             raise HTTPException(status_code=404, detail="application not found")
         return row
 
+    @app.get("/health/live")
+    def liveness():
+        # Used by the load balancer. It does not touch the database on purpose: if the database is
+        # busy, marking every task unhealthy would turn a slowdown into a full outage (incident 1).
+        return {"status": "ok"}
+
     @app.get("/health")
     def health():
         try:
