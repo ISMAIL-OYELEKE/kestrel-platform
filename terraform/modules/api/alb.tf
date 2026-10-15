@@ -17,8 +17,9 @@ resource "aws_lb_target_group" "api" {
   # Give in-flight requests 30 seconds to finish when a task is replaced.
   deregistration_delay = 30
 
+  # Liveness only. /health (which also checks the database) is for monitoring, not for routing.
   health_check {
-    path                = "/health"
+    path                = "/health/live"
     matcher             = "200"
     interval            = 15
     healthy_threshold   = 2
