@@ -9,7 +9,7 @@ This guide lets a small team deploy everything from an empty AWS account, and re
 | Folder | What it holds | Who applies it |
 |---|---|---|
 | `bootstrap/` | Budget with alerts, Terraform state bucket, GitHub Actions roles | A person, once |
-| `terraform/account/` | Account wide audit trail (CloudTrail, encrypted log bucket) | A person, once |
+| `terraform/account/` | Account wide audit trail (CloudTrail, encrypted log bucket), GuardDuty, Security Hub and AWS Config | A person, once |
 | `terraform/modules/` | Reusable building blocks | Used by the stacks |
 | `terraform/platform/` | The one root module for an environment: network, database, API, queue, scorer | A person now, the pipeline later |
 | `terraform/envs/` | Only the settings (`terraform.tfvars`) and state location (`backend.hcl`) for dev and prod | |
@@ -57,7 +57,7 @@ Created: a USD 40 monthly budget with alerts at 25, 50, 75 and 100 percent, the 
 
 If your account already has the GitHub OIDC provider (`token.actions.githubusercontent.com`), the stack reads it. If it does not, create it once in IAM, Identity providers (audience `sts.amazonaws.com`); see ADR 0003.
 
-## Step 2: account audit trail (once per account)
+## Step 2: account audit trail and security services (once per account)
 
 ```
 cd terraform/account
@@ -67,6 +67,8 @@ terraform apply account.tfplan
 ```
 
 Check that `log_admin_arns` in the output is you: only these identities may delete logs. See ADR 0004.
+
+This stack also turns on GuardDuty, Security Hub (AWS Foundational Security Best Practices only) and the AWS Config recorder that Security Hub's checks need. If any of these is already on in your account, import it or remove it from `terraform/modules/security` first, because each can exist only once per account and region. GuardDuty and Security Hub are free for their first 30 days; AWS Config is billed per recorded change, a few dollars a month for this platform.
 
 ## Step 3: GitHub settings
 
