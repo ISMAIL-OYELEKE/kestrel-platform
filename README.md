@@ -11,6 +11,9 @@ This guide lets a small team deploy everything from an empty AWS account, and re
 | `bootstrap/` | Budget with alerts, Terraform state bucket, GitHub Actions roles | A person, once |
 | `terraform/account/` | Account wide audit trail (CloudTrail, encrypted log bucket) | A person, once |
 | `terraform/modules/` | Reusable building blocks | Used by the stacks |
+| `terraform/platform/` | The one root module for an environment: network, database, API, queue, scorer | A person now, the pipeline later |
+| `terraform/envs/` | Only the settings (`terraform.tfvars`) and state location (`backend.hcl`) for dev and prod | |
+| `scripts/` | Smoke test against a deployed environment | |
 | `app/` | Loan API and scorer (Python), Dockerfile, local Docker Compose stack | The pipeline |
 | `docs/adr/` | Architecture decision records: why things are built this way | |
 | `docs/evidence/` | Screenshots proving each requirement | |
@@ -68,15 +71,49 @@ Check that `log_admin_arns` in the output is you: only these identities may dele
 
 In the repository, Settings, Environments, create `dev` and `prod`. For `prod`, limit deployment branches to `main`.
 
-## Step 4: application and environments
+## Step 4: run the application locally
 
-Run the application locally first: see `app/README.md`. The dev and prod platform stacks and the pipeline that deploys them are added in the next stage of this project.
+See `app/README.md`. This needs no AWS account.
+
+## Step 5: deploy an environment (dev or prod)
+
+Dev and prod use the same code in `terraform/platform`. Only the files in `terraform/envs/<env>/` differ, so `diff terraform/envs/dev/terraform.tfvars terraform/envs/prod/terraform.tfvars` shows every difference. Replace `dev` with `prod` below for production.
+
+1. Create the image repository first, because the service needs an image to start:
+   ```
+   cd terraform/platform
+   terraform init -backend-config=../envs/dev/backend.hcl
+   terraform apply -var-file=../envs/dev/terraform.tfvars -var api_image_tag=none -target=module.api.aws_ecr_repository.api
+   ```
+2. Build and push the API image, and build the scorer package. Run these from the repository root with a clean `app/` folder; the image is tagged with the git commit:
+   ```
+   app/push-image.sh dev
+   app/build-lambda.sh
+   ```
+   Note the tag that `push-image.sh` prints.
+3. Plan and apply. Check the plan before applying (a new dev environment is about 94 resources). The database takes about 8 minutes:
+   ```
+   cd terraform/platform
+   terraform plan -var-file=../envs/dev/terraform.tfvars -var api_image_tag=<tag> -out=dev.tfplan
+   terraform apply dev.tfplan
+   ```
+4. Prove it works end to end. This checks HTTPS, both scoring decisions, the request ID in the scorer logs, and that no BVN appears in any log:
+   ```
+   ../../scripts/smoke-aws.sh
+   ```
+
+There is no domain yet, so the load balancer uses a self signed certificate. `terraform output -raw certificate_pem` gives the certificate to trust it. See ADR 0008 for what changes when a domain is provided.
 
 ## Removing everything
 
 Remove in the reverse order of creation, so nothing is left behind that still costs money.
 
-1. Destroy dev and prod (added in the next stage).
+1. Destroy dev and prod (each one from `terraform/platform`, after `terraform init -reconfigure -backend-config=../envs/<env>/backend.hcl`):
+   ```
+   terraform plan -destroy -var-file=../envs/<env>/terraform.tfvars -var api_image_tag=<tag> -out=destroy.tfplan
+   terraform apply destroy.tfplan
+   ```
+   This takes 15 to 25 minutes, mostly waiting for AWS to release the scorer's network interfaces in the VPC.
 2. Audit trail. The log bucket is emptied automatically:
    ```
    cd terraform/account
