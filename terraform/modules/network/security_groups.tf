@@ -2,6 +2,7 @@
 # the app tier" stays true however many tasks or Lambda instances exist.
 
 resource "aws_security_group" "alb" {
+  #checkov:skip=CKV2_AWS_5:False positive: attached by the api, worker and database modules, which receive the group ID as a variable
   name        = "${var.name}-alb"
   description = "Load balancer: HTTPS and HTTP (redirected) from the internet"
   vpc_id      = aws_vpc.this.id
@@ -9,6 +10,7 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_security_group" "app" {
+  #checkov:skip=CKV2_AWS_5:False positive: attached by the api, worker and database modules, which receive the group ID as a variable
   name        = "${var.name}-app"
   description = "API tasks: traffic only from the load balancer"
   vpc_id      = aws_vpc.this.id
@@ -16,6 +18,7 @@ resource "aws_security_group" "app" {
 }
 
 resource "aws_security_group" "worker" {
+  #checkov:skip=CKV2_AWS_5:False positive: attached by the api, worker and database modules, which receive the group ID as a variable
   name        = "${var.name}-worker"
   description = "Scorer Lambda: no inbound traffic"
   vpc_id      = aws_vpc.this.id
@@ -23,6 +26,7 @@ resource "aws_security_group" "worker" {
 }
 
 resource "aws_security_group" "db" {
+  #checkov:skip=CKV2_AWS_5:False positive: attached by the api, worker and database modules, which receive the group ID as a variable
   name        = "${var.name}-db"
   description = "Database: PostgreSQL only from the API tasks and the scorer"
   vpc_id      = aws_vpc.this.id
@@ -47,6 +51,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "alb_http" {
+  #checkov:skip=CKV_AWS_260:Port 80 only answers with a permanent redirect to HTTPS (alb.tf); no data is served over HTTP
   security_group_id = aws_security_group.alb.id
   description       = "HTTP from anywhere, only to redirect to HTTPS"
   cidr_ipv4         = "0.0.0.0/0"

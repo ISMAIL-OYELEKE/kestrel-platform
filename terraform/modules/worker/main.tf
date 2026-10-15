@@ -1,4 +1,5 @@
 resource "aws_cloudwatch_log_group" "scorer" {
+  #checkov:skip=CKV_AWS_158:Logs never contain a BVN (masked by the JSON log formatter) and are encrypted at rest by CloudWatch; a customer managed key adds cost without protecting new data
   # Lambda writes to this exact name, so creating it here lets Terraform set retention and delete it.
   name              = "/aws/lambda/${var.name}-scorer"
   retention_in_days = var.log_retention_days
@@ -38,6 +39,12 @@ data "aws_caller_identity" "current" {}
 # The package is uploaded to S3 and Lambda reads it from there. Sending a multi megabyte zip inside
 # the CreateFunction request itself failed in practice ("bufio.Scanner: token too long", 15 Oct).
 resource "aws_s3_bucket" "artifacts" {
+  #checkov:skip=CKV_AWS_18:Holds only the scorer zip, which is rebuilt from Git; nothing to audit
+  #checkov:skip=CKV_AWS_21:Each object key is the zip's MD5, so an object is never overwritten; versioning adds nothing
+  #checkov:skip=CKV_AWS_144:Rebuilt from Git in minutes; replication would only add cost
+  #checkov:skip=CKV_AWS_145:Holds code, not customer data; S3 default encryption (AES-256) applies
+  #checkov:skip=CKV2_AWS_61:Old packages are removed with the environment on destroy
+  #checkov:skip=CKV2_AWS_62:Nothing needs to react to uploads
   bucket        = "${var.name}-artifacts-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
 }
@@ -58,6 +65,11 @@ resource "aws_s3_object" "scorer" {
 }
 
 resource "aws_lambda_function" "scorer" {
+  #checkov:skip=CKV_AWS_50:Tracing is stretch item 8.5; the request ID in every log line already follows a request from API to queue to scorer
+  #checkov:skip=CKV_AWS_115:Concurrency is capped where it matters, on the SQS event source mapping (maximum_concurrency), which protects database connections without throttling errors
+  #checkov:skip=CKV_AWS_116:Triggered by SQS: failed messages go to the queue's own dead-letter queue after 3 attempts
+  #checkov:skip=CKV_AWS_173:Environment variables hold only resource names, no secrets; they are encrypted at rest with the AWS managed key
+  #checkov:skip=CKV_AWS_272:Code signing needs AWS Signer and a signing profile; the package is built and uploaded only by the pipeline from reviewed Git commits
   function_name    = "${var.name}-scorer"
   role             = aws_iam_role.scorer.arn
   runtime          = "python3.13"

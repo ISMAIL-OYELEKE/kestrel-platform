@@ -1,4 +1,5 @@
 resource "aws_ecr_repository" "api" {
+  #checkov:skip=CKV_AWS_136:Images hold code, not customer data; AES-256 encryption at rest (the ECR default) is enough
   name = "${var.name}-api"
   # A tag can never be overwritten, so the commit SHA in a deployment always means the same image.
   image_tag_mutability = "IMMUTABLE"

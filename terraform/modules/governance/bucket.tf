@@ -1,4 +1,7 @@
 resource "aws_s3_bucket" "logs" {
+  #checkov:skip=CKV_AWS_18:Access logs for the log bucket would need a second bucket; every API call on this bucket is already recorded by CloudTrail itself
+  #checkov:skip=CKV_AWS_144:Cross region copy is a stretch item (9.3) and needs a second region, which rule R1 restricts
+  #checkov:skip=CKV2_AWS_62:Nothing needs to react to new log files
   bucket = local.bucket_name
   # Lets `terraform destroy` empty the bucket at teardown. Only log admins pass the delete deny below.
   force_destroy = true
@@ -39,6 +42,7 @@ resource "aws_s3_bucket_ownership_controls" "logs" {
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "logs" {
+  #checkov:skip=CKV_AWS_300:CloudTrail writes each log file with a single PutObject, never a multipart upload
   bucket = aws_s3_bucket.logs.id
   rule {
     id     = "expire-old-logs"

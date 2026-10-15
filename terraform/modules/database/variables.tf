@@ -54,3 +54,8 @@ variable "skip_final_snapshot" {
   type        = bool
   default     = true
 }
+
+variable "log_retention_days" {
+  description = "How long the database's PostgreSQL logs are kept in CloudWatch."
+  type        = number
+}
