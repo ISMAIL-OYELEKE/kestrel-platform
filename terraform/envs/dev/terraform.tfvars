@@ -14,7 +14,7 @@ api_cpu        = 256
 api_memory     = 512
 api_min_count  = 1
 api_max_count  = 3
-waf_rate_limit = 20000 # raised for the load test on 15 Oct 2026, back to 2000 afterwards (loadtest/README.md)
+waf_rate_limit = 2000
 
 scorer_max_concurrency = 2
 
