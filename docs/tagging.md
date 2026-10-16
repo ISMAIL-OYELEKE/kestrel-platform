@@ -27,3 +27,14 @@ Every stack (`bootstrap`, `terraform/account`, `terraform/platform`) sets all fi
 - The Config rule reports; it cannot stop someone creating an untagged resource by hand. Blocking needs AWS Organizations tag policies or an SCP, which a single account does not have (ADR 0001). For the client: a tag policy in Organizations plus an SCP that denies create calls without the tags.
 - Resources AWS makes on its own behalf (for example the network interfaces behind interface endpoints, and the account's default VPC) are not tagged by Terraform. Their cost is billed to the parent resource, which is tagged.
 - For the tags to appear in Cost Explorer and the bill, they must be activated once as cost allocation tags in the Billing console. That has not been done in this assessment account, which is destroyed after review; it is the first billing step for the client.
+
+## First result (16 Oct 2026, 15:25 WAT)
+
+The rule's first evaluation marked 24 resources NON_COMPLIANT (evidence `account-required-tags-rule-first-result.png` and `account-required-tags-noncompliant-list.png`):
+
+| Resources | What they are |
+|---|---|
+| 1 VPC, 3 subnets, 1 internet gateway, 1 security group, 1 route table, 1 network ACL | The account's default VPC (172.31.0.0/16), created by AWS, never used by Kestrel |
+| 14 network interfaces, 1 route table, 1 network ACL | No longer exist. At 15:26 WAT `describe-vpcs` showed only the default VPC and `describe-network-interfaces` returned none. Our inference: these are Config's records of resources AWS created inside the prod VPC (the 14 = 7 endpoints x 2 AZs, plus the VPC's main route table and default network ACL), which were destroyed at about 14:00 WAT before the rule existed |
+
+So no Kestrel resource that exists is untagged. For the client: delete the default VPC in every region, which also removes most of this noise.
