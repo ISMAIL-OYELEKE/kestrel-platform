@@ -30,6 +30,8 @@ The prod approval is option 4. The approver list is in `deploy.yml` (`approvers:
 
 Two repository variables, `DEV_ENABLED` and `PROD_ENABLED`, switch each environment's deployment on. Without them a documentation push could rebuild an environment we destroyed to save money.
 
+When dev is switched off (for example on prod day, after dev was proven and destroyed to save money), its job is skipped and prod can still run after approval. If the dev deployment runs and fails, prod does not run. The checks in `ci.yml` must pass either way.
+
 **Rollback (7.4).** The ECS deployment circuit breaker rolls back by itself when new tasks never become healthy. After a rollback the service is stable again, but on the old version, so a pipeline that only waits for "stable" would report success. `scripts/verify-deploy.sh` compares the task definition ECS is running with the one Terraform just deployed, and fails the pipeline if they differ.
 
 ## Consequences
