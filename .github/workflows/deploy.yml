@@ -59,7 +59,7 @@ jobs:
           exclude-workflow-initiator-as-approver: false
           issue-title: "Approve prod deployment of ${{ github.sha }}"
           issue-body: |
-            Commit ${{ github.sha }} passed all checks and is running in dev.
+            Commit ${{ github.sha }} passed all checks (and its dev deployment, when dev is switched on).
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
             Comment "approve" to deploy it to prod, or "deny" to stop.
 

@@ -18,7 +18,8 @@ api_min_count = 2
 api_max_count = 20
 # 5 tasks from the 25th to the 28th: 50 requests a second at payday peak, 10 per task (loadtest/README.md).
 api_payday_min_count = 5
-waf_rate_limit       = 2000
+# Raised from 2000 only for the 25x load test from one machine (loadtest/README.md); put back after.
+waf_rate_limit = 30000
 
 scorer_max_concurrency = 5
 
