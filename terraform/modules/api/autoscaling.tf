@@ -42,3 +42,37 @@ resource "aws_appautoscaling_policy" "requests" {
     }
   }
 }
+
+# Payday: salaries land between the 25th and 28th (brief), so the floor is raised before the rush
+# instead of waiting for target tracking to catch up. In the dev trial one task hit 100% CPU before
+# new tasks were ready. Times are Lagos time. The end is 23:00 on the 28th so it also fires in
+# February.
+resource "aws_appautoscaling_scheduled_action" "payday_start" {
+  count              = var.payday_min_count == null ? 0 : 1
+  name               = "${var.name}-api-payday-start"
+  service_namespace  = aws_appautoscaling_target.api.service_namespace
+  resource_id        = aws_appautoscaling_target.api.resource_id
+  scalable_dimension = aws_appautoscaling_target.api.scalable_dimension
+  schedule           = "cron(0 6 25 * ? *)"
+  timezone           = "Africa/Lagos"
+
+  scalable_target_action {
+    min_capacity = var.payday_min_count
+    max_capacity = var.max_count
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "payday_end" {
+  count              = var.payday_min_count == null ? 0 : 1
+  name               = "${var.name}-api-payday-end"
+  service_namespace  = aws_appautoscaling_target.api.service_namespace
+  resource_id        = aws_appautoscaling_target.api.resource_id
+  scalable_dimension = aws_appautoscaling_target.api.scalable_dimension
+  schedule           = "cron(0 23 28 * ? *)"
+  timezone           = "Africa/Lagos"
+
+  scalable_target_action {
+    min_capacity = var.min_count
+    max_capacity = var.max_count
+  }
+}

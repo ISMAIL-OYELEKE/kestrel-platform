@@ -54,6 +54,12 @@ variable "max_count" {
   default = 4
 }
 
+variable "payday_min_count" {
+  description = "Minimum tasks from 06:00 on the 25th to 23:00 on the 28th, Lagos time. null turns the payday schedule off."
+  type        = number
+  default     = null
+}
+
 variable "cpu_target_percent" {
   description = "Auto scaling adds tasks when average CPU goes above this."
   type        = number

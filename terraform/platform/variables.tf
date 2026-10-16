@@ -78,6 +78,12 @@ variable "api_max_count" {
   type = number
 }
 
+variable "api_payday_min_count" {
+  description = "Minimum API tasks during the payday window (25th to 28th). null means no payday schedule."
+  type        = number
+  default     = null
+}
+
 variable "waf_rate_limit" {
   type = number
 }
