@@ -19,6 +19,7 @@ resource "aws_s3_account_public_access_block" "this" {
 # IAM.7: strong passwords for IAM users that sign in to the console. No expiry: forced rotation
 # pushes people to predictable passwords, and MFA is the stronger control (NIST SP 800-63B).
 resource "aws_iam_account_password_policy" "this" {
+  #checkov:skip=CKV_AWS_9:No forced expiry on purpose: NIST SP 800-63B advises against periodic rotation, and MFA is required
   minimum_password_length        = 14
   require_uppercase_characters   = true
   require_lowercase_characters   = true
