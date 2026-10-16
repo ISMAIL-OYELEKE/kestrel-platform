@@ -67,3 +67,4 @@ Note on the prod dashboard screenshots: their address bar shows us-east-1 becaus
 | prod-restore-drill-check.png | 16 Oct 2026, 13:11 WAT | On the restored copy, "before" returns HTTP 200 and "after" HTTP 404: the data is exactly as at 12:37:30 WAT | 9.1, DL7 |
 | prod-restore-drill-back.png | 16 Oct 2026, 13:16 WAT | Application pointed back at the original database, done at 13:16:17 WAT | 9.1, DL7 |
 | prod-restore-drill-full-log.png | 16 Oct 2026, 13:20 WAT | The whole restore drill in one terminal: markers, restore, point, check (200 and 404), back, check on the original (both 200), cleanup with the restored copy deleted at 13:20:05 WAT | 9.1, 9.2, DL7 |
+| pricing-calculator-summary.png | 16 Oct 2026, 15:05 WAT | AWS Pricing Calculator estimate "Kestrel prod, client scale": 16 services in Europe (Ireland), USD 273.48 a month, USD 3,281.76 for 12 months, no upfront cost. Public link in docs/design/design-document.md section 8 | 10.1, DL8 |
