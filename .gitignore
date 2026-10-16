@@ -18,3 +18,7 @@ __pycache__/
 .ruff_cache/
 build/
 dist/
+
+# Restore drill working files (scripts/restore-drill.sh); the log is copied into docs/restore-drill.md
+.restore-drill/
+restore-drill.log
