@@ -10,6 +10,7 @@ crash.log
 .env.*
 *.pem
 
+temp_auto_push.bat
 # Python
 __pycache__/
 *.pyc
@@ -22,3 +23,5 @@ dist/
 # Restore drill working files (scripts/restore-drill.sh); the log is copied into docs/restore-drill.md
 .restore-drill/
 restore-drill.log
+.gitignore
+branch_structure.json
