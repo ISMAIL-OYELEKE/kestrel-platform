@@ -8,6 +8,7 @@ crash.log
 # Secrets and local environment files must never be committed
 .env
 .env.*
+temp_auto_push.bat
 *.pem
 
 # Python
@@ -18,3 +19,5 @@ __pycache__/
 .ruff_cache/
 build/
 dist/
+.gitignore
+branch_structure.json
