@@ -43,7 +43,6 @@ resource "aws_s3_bucket" "artifacts" {
   #checkov:skip=CKV_AWS_21:Each object key is the zip's MD5, so an object is never overwritten; versioning adds nothing
   #checkov:skip=CKV_AWS_144:Rebuilt from Git in minutes; replication would only add cost
   #checkov:skip=CKV_AWS_145:Holds code, not customer data; S3 default encryption (AES-256) applies
-  #checkov:skip=CKV2_AWS_61:Old packages are removed with the environment on destroy
   #checkov:skip=CKV2_AWS_62:Nothing needs to react to uploads
   bucket        = "${var.name}-artifacts-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
@@ -55,6 +54,44 @@ resource "aws_s3_bucket_public_access_block" "artifacts" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+# S3.5: refuse any request that does not use TLS, even from inside the account.
+data "aws_iam_policy_document" "artifacts_tls_only" {
+  statement {
+    sid       = "DenyInsecureTransport"
+    effect    = "Deny"
+    actions   = ["s3:*"]
+    resources = [aws_s3_bucket.artifacts.arn, "${aws_s3_bucket.artifacts.arn}/*"]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "artifacts" {
+  bucket     = aws_s3_bucket.artifacts.id
+  policy     = data.aws_iam_policy_document.artifacts_tls_only.json
+  depends_on = [aws_s3_bucket_public_access_block.artifacts]
+}
+
+# S3.13: clean up uploads that never finished, so they cannot pile up unseen and cost money.
+resource "aws_s3_bucket_lifecycle_configuration" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+  rule {
+    id     = "abort-incomplete-uploads"
+    status = "Enabled"
+    filter {}
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
 }
 
 resource "aws_s3_object" "scorer" {
