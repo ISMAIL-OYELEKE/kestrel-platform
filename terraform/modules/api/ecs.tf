@@ -67,6 +67,9 @@ resource "aws_ecs_task_definition" "api" {
     name      = "api"
     image     = "${aws_ecr_repository.api.repository_url}:${var.image_tag}"
     essential = true
+    # The image already runs as this user (app/Dockerfile). Saying it here too lets Security Hub
+    # see it (ECS.20) and stops a future image from running as root by accident.
+    user = "10001"
     # The code never writes to disk, so the container's file system is read only.
     readonlyRootFilesystem = true
     portMappings           = [{ containerPort = var.app_port, protocol = "tcp" }]
