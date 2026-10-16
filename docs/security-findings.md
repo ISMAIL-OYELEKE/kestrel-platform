@@ -32,7 +32,7 @@ If GuardDuty raises a finding later, the first step is the same as any alarm: op
 | EC2.10, EC2.55 to EC2.58, EC2.60 | Interface endpoints for EC2, ECR, Systems Manager and Incident Manager | Accept | Each interface endpoint costs USD 0.011 an hour per AZ, about USD 8 a month. We create only the endpoints the platform calls (ADR 0006). Kestrel never calls the EC2, Systems Manager or Incident Manager APIs. The ECR results (EC2.55, EC2.56) are for the default VPC, because our VPCs already have the ECR endpoints |
 | EC2.172 | VPC Block Public Access blocks internet gateway traffic | Accept | The load balancer has to receive traffic from the internet through the internet gateway. The application and database subnets have no route to it |
 | ECS.20 | Task definitions name a non-root user | Fix | The image already runs as user 10001 (`app/Dockerfile`), but the control reads the task definition, so we set `user` there too |
-| ELB.17 | HTTPS listener uses a recommended TLS policy | Under review | The listener uses `ELBSecurityPolicy-TLS13-1-2-2021-06` (TLS 1.2 and 1.3 only). We will check which policy the control expects and switch if it is stricter |
+| ELB.17 | HTTPS listener uses a recommended TLS policy | Fix | The control accepts only the "Res" (restricted) and TLS 1.3 only policies. We moved from `ELBSecurityPolicy-TLS13-1-2-2021-06` to `ELBSecurityPolicy-TLS13-1-2-Res-2021-06`, see the recheck below |
 | ELB.18 | Load balancer listeners use secure protocols | Accept | The only non-HTTPS listener is port 80, and it does nothing but send a 301 redirect to HTTPS (ADR 0008). Removing it would make customers who type http:// get a timeout instead |
 | ELB.21, ELB.22 | Target groups use HTTPS to the tasks and for health checks | Accept | TLS ends at the load balancer. Traffic to the tasks stays inside private subnets, and security groups allow it only from the load balancer (ADR 0008). Re-encrypting would mean certificates inside every task for little gain |
 | GuardDuty.12, GuardDuty.13 | GuardDuty ECS and EC2 Runtime Monitoring | Accept | Same as GuardDuty.11 above |
@@ -57,6 +57,9 @@ The recheck showed that the five "Fix" items above had not been made: EC2.7, ECS
 | ECS.20 | MEDIUM | API task definition | Fix | `user = "10001"` in the container definition. The image already ran as that user; now the task definition says so too |
 | S3.5 | MEDIUM | kestrel-prod-artifacts bucket | Fix | Bucket policy that denies any request without TLS (`terraform/modules/worker/main.tf`) |
 | S3.13 | LOW | kestrel-prod-artifacts bucket | Fix | Lifecycle rule that removes unfinished uploads after 7 days |
+| ELB.17 | MEDIUM | HTTPS listener | Fix | Reviewed 16 Oct against the control's fixed list of accepted policies (AWS Security Hub user guide, ELB controls): it accepts only `TLS13-1-3` (TLS 1.3 only), `TLS13-1-2-Res` (TLS 1.2 restricted to forward secret AES-GCM ciphers) and their FIPS and post quantum versions. Ours, `TLS13-1-2-2021-06`, also allows older TLS 1.2 ciphers (CBC mode and non forward secret RSA key exchange). Changed to `ELBSecurityPolicy-TLS13-1-2-Res-2021-06`. Trade off: very old clients that only speak those ciphers (Android 4 era phones, Windows 7 era browsers) cannot connect; any phone from about 2015 onwards can. We kept TLS 1.2 rather than TLS 1.3 only for that reason. Fixed in code; proven on the next deploy |
+
+Applied on 16 Oct: the four account settings with `terraform apply` in `terraform/account` at 13:33 WAT (evidence/account-security-baseline-apply.png); ECS.20, S3.5 and S3.13 with the prod deploy of PR 18 at 13:30 WAT (evidence/prod-security-fixes-deploy-success.png). ELB.17 was fixed in code after prod was destroyed, so it is proven on the next deploy. Security Hub rechecks most controls within a day, so the score after these fixes was not measured before the teardown.
 
 The rest are accepted or out of scope, with the reason:
 
@@ -67,6 +70,5 @@ The rest are accepted or out of scope, with the reason:
 | IAM.2 | LOW | Accept | The one IAM user (ISMAIL_OYELEKE) has AdministratorAccess attached directly. For a one person account that is the simplest safe option. For a team: IAM Identity Center with permission sets, so nobody has a long lived IAM user at all |
 | ELB.5 | MEDIUM | Accept | Load balancer access logs cost S3 storage and are not needed while WAF logs and application logs (with request IDs) already show every request. Turn on for the client |
 | ELB.6 | MEDIUM | Accept | Deletion protection would block our end of day `terraform destroy`. Turn on in the client's production |
-| ELB.17 | MEDIUM | Under review | Fails on the HTTPS listener although it uses `ELBSecurityPolicy-TLS13-1-2-2021-06`. We will compare against the policy list in the control's finding detail before changing it |
 | S3.9 (4 buckets) | MEDIUM | Accept | Server access logs for log, Config and artifacts buckets mostly log the log writers. CloudTrail already records who changed what |
 | GuardDuty.7, .11, .12, .13; Inspector.1 to .4; Macie.1; SSM.6; ELB.18, .21, .22 | | Accept | As in the first review above |

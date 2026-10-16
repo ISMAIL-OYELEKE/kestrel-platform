@@ -51,8 +51,9 @@ resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.this.arn
   port              = 443
   protocol          = "HTTPS"
-  # TLS 1.3 and 1.2 only.
-  ssl_policy      = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  # TLS 1.3, plus TLS 1.2 with forward secret AES-GCM ciphers only ("Res" = restricted).
+  # One of the policies Security Hub control ELB.17 accepts.
+  ssl_policy      = "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
   certificate_arn = local.certificate_arn
 
   default_action {

@@ -14,7 +14,7 @@ The brief requires HTTPS only (item 6.3). The client has not provided a domain y
 
 ## Decision
 
-Terraform generates a private key and a certificate for the load balancer's DNS name, and imports both into ACM. The load balancer listens on 443 with TLS 1.2 and 1.3 only (`ELBSecurityPolicy-TLS13-1-2-2021-06`). Port 80 only returns a permanent redirect to HTTPS.
+Terraform generates a private key and a certificate for the load balancer's DNS name, and imports both into ACM. The load balancer listens on 443 with TLS 1.2 and 1.3 only (`ELBSecurityPolicy-TLS13-1-2-Res-2021-06`; changed on 16 Oct from `ELBSecurityPolicy-TLS13-1-2-2021-06` to meet Security Hub control ELB.17, see docs/security-findings.md). Port 80 only returns a permanent redirect to HTTPS.
 
 The certificate is a Terraform output. Clients save it and call the API with `curl --cacert kestrel-dev.pem https://...`. The connection is then encrypted **and** fully verified against that certificate. We never tell anyone to use `curl -k`, which turns verification off.
 
