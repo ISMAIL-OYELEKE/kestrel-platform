@@ -25,7 +25,9 @@ To prove the restore went to the right moment, the drill creates two loan applic
 | 13:11:47 | 12:11:47 | Check: "before" HTTP 200 (found), "after" HTTP 404 (gone). The copy holds exactly the data from 12:37:30 | prod-restore-drill-check.png |
 | 13:13:09 | 12:13:09 | Started pointing the application back at the original database | prod-restore-drill-back.png |
 | 13:16:17 | 12:16:17 | Back on the original database | prod-restore-drill-back.png |
-| (pending) | | Restored copy deleted with `cleanup` | |
+| 13:17:40 | 12:17:40 | Check on the original database: "before" HTTP 200 and "after" HTTP 200. Nothing was lost on prod | prod-restore-drill-full-log.png |
+| 13:18:32 | 12:18:32 | Deleting the restored copy (`cleanup`) | prod-restore-drill-full-log.png |
+| 13:20:05 | 12:20:05 | Restored copy deleted. Nothing from the drill is left running | prod-restore-drill-full-log.png |
 
 ## How long each step took
 
