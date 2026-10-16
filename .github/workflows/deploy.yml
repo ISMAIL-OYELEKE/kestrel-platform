@@ -40,9 +40,12 @@ jobs:
   # The prod gate. GitHub's "Required reviewers" setting is not available for private
   # repositories on the free plan, so the approval is a GitHub issue that an approver answers
   # with "approve" or "deny". See ADR 0009.
+  # Dev being switched off (skipped) must not block prod, but a failed dev deploy must.
   approve-prod:
-    needs: dev
-    if: vars.PROD_ENABLED == 'true'
+    needs: [checks, dev]
+    if: >-
+      ${{ !cancelled() && vars.PROD_ENABLED == 'true' && needs.checks.result == 'success' &&
+      (needs.dev.result == 'success' || needs.dev.result == 'skipped') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
@@ -62,6 +65,7 @@ jobs:
 
   prod:
     needs: approve-prod
+    if: ${{ !cancelled() && needs.approve-prod.result == 'success' }}
     uses: ./.github/workflows/deploy-env.yml
     with:
       environment: prod
