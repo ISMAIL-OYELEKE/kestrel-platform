@@ -11,11 +11,14 @@ db_backup_retention_days = 7
 db_deletion_protection = false
 db_skip_final_snapshot = true
 
-api_cpu        = 256
-api_memory     = 512
-api_min_count  = 2
-api_max_count  = 20
-waf_rate_limit = 2000
+# 0.5 vCPU: in the dev load test a 0.25 vCPU task reached 100% CPU at about 23 requests a second.
+api_cpu       = 512
+api_memory    = 1024
+api_min_count = 2
+api_max_count = 20
+# 5 tasks from the 25th to the 28th: 50 requests a second at payday peak, 10 per task (loadtest/README.md).
+api_payday_min_count = 5
+waf_rate_limit       = 2000
 
 scorer_max_concurrency = 5
 

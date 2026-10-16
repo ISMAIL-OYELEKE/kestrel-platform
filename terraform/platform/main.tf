@@ -59,6 +59,7 @@ module "api" {
   memory                = var.api_memory
   min_count             = var.api_min_count
   max_count             = var.api_max_count
+  payday_min_count      = var.api_payday_min_count
   waf_rate_limit        = var.waf_rate_limit
   certificate_arn       = var.certificate_arn
   log_retention_days    = var.log_retention_days
