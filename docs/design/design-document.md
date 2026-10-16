@@ -12,7 +12,7 @@ Kestrel's loan platform today is one server and one database in a local data cen
 | Loan decisions in minutes, not overnight | Each application is scored seconds after it arrives | Load test: the scoring queue never built up |
 | Evidence for auditors | Every action in the account is recorded in a log nobody in the application can change. Data is encrypted everywhere, with the BVN given extra protection | Section 6 |
 | RPO 15 minutes, RTO 2 hours | Measured in a real restore: about 5 minutes of data at risk, back in service in 21 minutes | Section 7 |
-| Under USD 1,500 a month | About USD [TOTAL] a month at Kestrel's real size, with a forecast | Section 8 |
+| Under USD 1,500 a month | About USD 273 a month at Kestrel's real size, with a forecast | Section 8 |
 | Nigeria Data Protection Act 2023, and Cape Town or Europe | Stay in Europe for now, with the legal steps below; plan for Nigeria hosting of payment data from 2027 | Section 9 |
 
 ## 2. How it works
@@ -41,7 +41,7 @@ The servers and database have no route to the internet at all. They reach AWS se
 | BVN encrypted, plus a one way fingerprint for searching | Meets "never readable in the database"; still allows "find by BVN" | The application cannot decrypt a BVN; a future verification service would get its own audited permission | ADR 0007 |
 | HTTPS with our own certificate until Kestrel provides a domain | No domain was available | Customers' apps must trust our certificate; a free trusted certificate replaces it the day a domain exists | ADR 0008 |
 | Bigger servers in production and a higher minimum from the 25th to the 28th | The payday spike arrives faster than new servers can start | About USD 7 a month for the payday minimum | ADR 0010 |
-| Database copy in a second data centre (Multi-AZ) | If one data centre fails, the copy takes over in a minute or two | Doubles the database cost (about USD [DB] a month) | Section 7 |
+| Database copy in a second data centre (Multi-AZ) | If one data centre fails, the copy takes over in a minute or two | Doubles the database cost (about USD 15 a month more) | Section 7 |
 
 ## 4. What we cut, and why
 
@@ -75,15 +75,35 @@ The database also has a live copy in a second data centre. If the first one fail
 
 ## 8. Cost and forecast
 
-Estimated with the AWS Pricing Calculator for Kestrel's real size (180,000 customers, about 2 million requests a month, payday at 25 times normal): [LINK].
+Estimated on 16 October with the AWS Pricing Calculator for Kestrel's real size (180,000 customers, about 2 million requests a month, payday at 25 times normal), in Ireland, on demand prices, no upfront payment: https://calculator.aws/#/estimate?id=7703547414a23b80957496096e1cd9d9024d8d38 (screenshot `docs/evidence/pricing-calculator-summary.png`). Lambda is priced without its free tier, to stay on the safe side.
 
-[COST TABLE]
+**Total: USD 273.48 a month, USD 3,281.76 a year. That is 18% of the USD 1,500 monthly limit.**
 
-**Forecast.** The fixed part (private connections, database, load balancer, firewall) does not grow with customers. The servers and requests grow roughly in line with traffic. At double today's customers the bill would be about USD [2X]; the USD 1,500 limit leaves room for about [N] times today's traffic before the database or design needs revisiting.
+| What it pays for | AWS service | USD a month |
+|---|---|---|
+| Private connections to AWS services (7 endpoints in 2 data centres) | VPC interface endpoints | 112.52 |
+| Application servers: 2 always on, 5 from the 25th to the 28th, up to 10 for a few peak hours | Fargate | 44.14 |
+| Database with a live copy in a second data centre | RDS PostgreSQL, db.t4g.micro Multi-AZ, 20 GB | 30.63 |
+| Security checks and audit: change history, best practice checks, threat detection, activity log | Config, Security Hub, GuardDuty, CloudTrail | 37.44 |
+| Load balancer | Application Load Balancer | about 19 |
+| Web firewall | WAF | 10.20 |
+| Encryption keys and the database password | KMS, Secrets Manager | about 11 |
+| Logs, dashboard and alarms | CloudWatch | 6.34 |
+| Loan scoring and messages | Lambda, SQS, SNS | 2.23 |
+| Stored application images | ECR | 0.20 |
+| **Total** | | **273.48** |
+
+The load balancer and keys lines are rounded; the calculator total is exact. Not included, because each is under a dollar or not known yet: internet data out (small responses, inside the free 100 GB), log storage after ingestion (about USD 0.30), storage for the log buckets, tax, and an AWS support plan (Business support starts at USD 100 a month and is worth considering for a bank).
+
+**Forecast.** The fixed part (private connections, database, load balancer, firewall) does not grow with customers. The servers and requests grow roughly in line with traffic. About USD 70 of today's bill grows with traffic (servers, request charges, log volume, threat detection); the other USD 200 is fixed. At double today's customers the bill would be about USD 345. The bill is not what limits growth first: the small database is. At about 10 times today's traffic the database would need a larger size (our estimate: roughly USD 250 a month more, not in the calculator link), which still keeps the total near USD 1,150, under the limit. These forecasts are our arithmetic from the calculator lines, not a second calculator run.
 
 **Three ways to lower the bill**
 
-[SAVINGS]
+1. **Commit for a year.** A one year Compute Savings Plan for the servers and a one year reserved database instance cut those prices by roughly a fifth to a third for a steady workload like this one. Saving: about USD 15 to 20 a month. Risk: low; the commitment is small.
+2. **Use AWS Graviton (ARM) processors** for the servers and the scoring function. AWS prices Graviton Fargate about 20% below Intel, and it uses less energy. Saving: about USD 9 a month now, growing with traffic. Cost: build the image for ARM and rerun the load test.
+3. **Put the private connections in one data centre instead of two.** Saving: about USD 56 a month, the biggest single cut. Risk: if that data centre fails, servers in the other one lose their path to AWS services until it recovers. We do not recommend this for a bank, but it is the lever if money gets tight.
+
+Savings 1 and 2 are estimates from AWS's published discounts and should be priced in the calculator before committing.
 
 ## 9. Cape Town (af-south-1) or Europe (eu-west-1)?
 
