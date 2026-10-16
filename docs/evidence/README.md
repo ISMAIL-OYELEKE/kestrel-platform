@@ -55,3 +55,10 @@ Screenshots are cropped to the browser's address bar and page only; the browser 
 | prod-guardduty-summary.png | 16 Oct 2026, 12:45 WAT | GuardDuty summary in eu-west-1 with prod running: 2 findings today, both on 1 resource in 1 account, 0 critical, 0 high, 0 attack sequences. Runtime Monitoring for ECS on Fargate is not enabled (extra cost per vCPU; noted as a go-live recommendation in docs/security-findings.md) | 6.5 |
 
 Note on the prod dashboard screenshots: their address bar shows us-east-1 because the console tab was left on that region. CloudWatch dashboards are global (the same dashboard opens from any region) and every widget in `terraform/modules/observability/dashboard.tf` pins `region = eu-west-1`, so the graphs show the eu-west-1 metrics whichever region the console is set to. Nothing in this project runs in us-east-1.
+| prod-restore-drill-marker-before.png | 16 Oct 2026, 12:36 WAT | Restore drill: marker application "before" created through the prod API at 12:36:51 WAT | 9.1, DL7 |
+| prod-restore-drill-marker-after.png | 16 Oct 2026, 12:47 WAT | Restore drill: marker application "after" created at 12:47:26 WAT, after the chosen restore point | 9.1, DL7 |
+| prod-restore-drill-restore-requested.png | 16 Oct 2026, 12:51 WAT | Point in time restore of kestrel-prod to 12:37:30 WAT requested at 12:48:57 WAT; latest restorable time 12:44:13 WAT | 9.1, 9.2, DL7 |
+| prod-restore-drill-restore-available.png | 16 Oct 2026, 13:03 WAT | Restored copy kestrel-prod-restored available at 13:03:35 WAT, 14 min 38 s after the request | 9.1, 9.2, DL7 |
+| prod-restore-drill-point.png | 16 Oct 2026, 13:10 WAT | API (task definition revision 4) and scorer Lambda pointed at the restored copy; API stable at 13:10:01 WAT. Measured RTO 21 min 4 s | 9.1, 9.2, DL7 |
+| prod-restore-drill-check.png | 16 Oct 2026, 13:11 WAT | On the restored copy, "before" returns HTTP 200 and "after" HTTP 404: the data is exactly as at 12:37:30 WAT | 9.1, DL7 |
+| prod-restore-drill-back.png | 16 Oct 2026, 13:16 WAT | Application pointed back at the original database, done at 13:16:17 WAT | 9.1, DL7 |
