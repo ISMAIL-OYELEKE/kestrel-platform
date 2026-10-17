@@ -2,26 +2,26 @@ Subject: Kestrel loan platform on AWS: handover
 
 Dear Kestrel team,
 
-Your new loan platform is built and tested on AWS in Ireland (eu-west-1). Everything is in code, with a design document, decision records and a runbook with one entry per alarm for your three person team.
+Your new loan platform is built and tested on AWS in Ireland (eu-west-1). Everything is in code, with a design document, decision records and a runbook for your three person team.
 
 What we delivered
-- No payday outages: at 25 times normal traffic, no request failed and 95% were answered in 0.058 seconds. Extra capacity runs from the 25th to the 28th.
-- Loan decisions in seconds, not overnight, and never duplicated.
-- Audit evidence: every action is logged where the application cannot change it. Data is encrypted everywhere; BVNs are never readable in the database.
-- Recovery: a real restore drill measured 5 minutes of data at risk (target 15) and 21 minutes to recover (target 2 hours).
+- Payday capacity: at 25 times normal traffic, no request failed and 95% were answered in 0.058 seconds. Extra capacity runs from the 25th to the 28th.
+- Loan decisions in seconds, not overnight.
+- Audit evidence: AWS account activity is logged where the application cannot change it. Public traffic and the database are encrypted; BVNs are never readable in the database.
+- Recovery: a restore drill had the service back 21 minutes after the restore started (target 2 hours).
 - Cost: about USD 273 a month at your size, under your USD 1,500 limit.
 
 Known risks
-1. Development and production share one AWS account, so a mistake in one can affect the other.
-2. The AWS limit of 12 server processors can block a release after a large payday scale out.
-3. Without a domain, customers' apps must trust our own certificate.
-4. From 1 January 2027, CBN rules require payment data generated in Nigeria to be stored in Nigeria. Ireland does not meet that.
+1. Development and production share one AWS account.
+2. The AWS limit of 12 server processors can block a release after a payday scale out.
+3. Traffic between the load balancer and the application is not encrypted inside the private network.
+4. Reported Central Bank of Nigeria rules may require payment data to stay in Nigeria from 2027.
 
 Your next steps
-1. Ask AWS to raise the processor limit to at least 40 (free), and freeze releases from the 25th to the 28th.
-2. Move to separate AWS accounts under AWS Organizations before go-live.
+1. Ask AWS to raise the processor limit (free), and freeze releases from the 25th to the 28th.
+2. Move to separate AWS accounts before go-live.
 3. Give us a domain for a publicly trusted certificate.
-4. Get a legal reading on the CBN circular, and record the legal basis for storing data in Ireland.
+4. Ask your compliance team to confirm the CBN rules and the legal basis for storing data in Ireland.
 5. Repeat the restore drill quarterly and the load test before each payday season.
 
 Kind regards,

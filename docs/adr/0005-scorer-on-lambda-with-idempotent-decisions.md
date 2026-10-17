@@ -32,6 +32,6 @@ The risk with Lambda is that it scales out quickly and can exhaust database conn
 ## Consequences
 
 - Duplicate SQS deliveries, including the 45 second case from incident 2, produce one decision and one notification. A test with five concurrent copies of the same message proves it (`app/tests/test_scorer.py`).
-- Delivery of notifications is "at least once" with the same content: if the commit fails after SNS accepted the message, the retry publishes the same decision again. Each event carries `application_id`, so subscribers can ignore repeats. Two different decisions for one application cannot happen.
+- Delivery of notifications is "at least once": if the commit fails after SNS accepted the message, the retry publishes the same decision again, possibly with a different `decided_at`. We do not promise exactly once delivery. Each event carries `application_id`, so subscribers can ignore repeats. Two different decisions for one application cannot happen.
 - In production the next step would be a transactional outbox, so publishing does not happen while a row lock is held.
 - The API and the scorer share one codebase (`app/src/kestrel`) with two entry points, so the business rule is written once.

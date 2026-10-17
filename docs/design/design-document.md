@@ -10,8 +10,8 @@ Kestrel's loan platform today is one server and one database in a local data cen
 |---|---|---|
 | No more payday outages | The platform adds servers by itself as traffic grows, and starts with more on the 25th to the 28th. At 25 times normal traffic, no request failed and responses took under a tenth of a second | Load test, section 5 |
 | Loan decisions in minutes, not overnight | Each application is scored seconds after it arrives | Load test: the scoring queue never built up |
-| Evidence for auditors | Every action in the account is recorded in a log nobody in the application can change. Data is encrypted everywhere, with the BVN given extra protection | Section 6 |
-| RPO 15 minutes, RTO 2 hours | Measured in a real restore: about 5 minutes of data at risk, back in service in 21 minutes | Section 7 |
+| Evidence for auditors | AWS account activity is recorded in a log nobody in the application can change. Public traffic, the database and backups are encrypted, with the BVN given extra protection | Section 6 |
+| RPO 15 minutes, RTO 2 hours | In a real restore drill on a small database: newest restore point 4 min 44 s old, service stable 21 minutes after the restore started | Section 7 |
 | Under USD 1,500 a month | About USD 273 a month at Kestrel's real size, with a forecast | Section 8 |
 | Nigeria Data Protection Act 2023, and Cape Town or Europe | Stay in Europe for now, with the legal steps below; plan for Nigeria hosting of payment data from 2027 | Section 9 |
 
@@ -26,7 +26,7 @@ See the architecture diagram (`docs/design/architecture.png`). In plain terms:
 5. A separate scoring function picks up the message within seconds, decides, saves the decision, and announces it so other systems (SMS, email, reporting) can react without code changes.
 6. The customer's app checks back and sees the decision.
 
-The servers and database have no route to the internet at all. They reach AWS services through private connections only, so even a compromised server could not send data out.
+The servers and database have no route to the internet. They reach AWS services only through private connections (VPC endpoints), so the paths data could take out are limited to those AWS services and their access policies.
 
 ## 3. Key decisions
 
@@ -61,17 +61,17 @@ We defined normal as 2 requests a second (3,600 customers in the busiest hour) a
 
 ## 6. Security and audit evidence
 
-- **Who did what:** every action in every region is recorded (CloudTrail) in a storage bucket that the application cannot write to or delete from, encrypted with its own key.
-- **Encryption:** in transit everywhere (TLS 1.2 or 1.3), at rest everywhere. The database, its backups and the BVN use keys Kestrel controls.
+- **Who did what:** AWS management activity in every region is recorded (CloudTrail) in a storage bucket that the application cannot write to or delete from, encrypted with its own key. Application logs carry a request ID per call. Reads of stored data and SQL activity are not in this trail; they need separate data event and database audit logging.
+- **Encryption:** customer traffic to the load balancer and connections to the database use TLS 1.2 or 1.3. The hop from the load balancer to the application inside the private network is plain HTTP today (a known risk, section 11). At rest, everything is encrypted; the database, its backups and the BVN use keys Kestrel controls.
 - **No passwords in code:** the database password is created and changed every 7 days by AWS and never appears in code or files.
 - **Continuous checks:** threat detection (GuardDuty) and AWS's security best practice checks (Security Hub) are on. Score 90% on 16 October; every open item is explained and the free ones are fixed (`docs/security-findings.md`).
 - **Alarms:** server errors, slow responses, no healthy servers, scoring falling behind, any failed scoring message and low database storage each send an email, and each links to a runbook entry the three person team can follow (`docs/runbook.md`).
 
 ## 7. Recovery: RPO and RTO
 
-On 16 October we deliberately "lost" data, restored the production database to a moment before the loss, pointed the application at the restored copy and checked the right data came back. Measured: **about 5 minutes of data at risk (target 15)** and **21 minutes to recover (target 2 hours)**. The spare time covers noticing the problem and deciding to restore. A bigger database would take longer to restore, so the drill should be repeated every quarter. Details in `docs/restore-drill.md`.
+On 16 October we deliberately "lost" data, restored the production database to a moment before the loss, pointed the application at the restored copy and checked the right data came back. Measured on a small database: the service was **stable 21 minutes after the restore was requested (target 2 hours)**, and the first data check passed at 22 minutes 50 seconds. When the restore was requested, the newest point AWS could restore to was **4 minutes 44 seconds old (target 15 minutes)**; the drill chose an earlier point, 11 minutes 27 seconds back, just before the deliberate loss. The spare time covers noticing the problem and deciding to restore. A real recovery also has to pause new applications, check messages already in the queue against the restored data, and confirm new applications are scored. A bigger database would take longer to restore, so the drill should be repeated every quarter. Details in `docs/restore-drill.md`.
 
-The database also has a live copy in a second data centre. If the first one fails, AWS switches over in a minute or two, with no data lost; this is far inside the 2 hour target. If the copy were dropped to save money, a data centre failure would mean a restore like the drill: about 21 minutes and up to 5 minutes of data.
+The database also has a live copy in a second data centre. If the first one fails, AWS switches over in a minute or two, with no data lost; this is far inside the 2 hour target. If the copy were dropped to save money, a data centre failure would mean a restore like the drill: about 21 minutes, losing the writes made since the newest restore point (typically about 5 minutes).
 
 ## 8. Cost and forecast
 
@@ -111,12 +111,12 @@ Savings 1 and 2 are estimates from AWS's published discounts and should be price
 
 **What the Nigeria Data Protection Act 2023 says.** It does not require personal data to stay in Nigeria. It allows a transfer abroad when the destination gives adequate protection, or on other grounds such as the customer's informed consent or a contract with the customer (sections 41 to 43). The Nigeria Data Protection Commission's General Application and Implementation Directive (2025) lists how adequacy is judged, including an effective data protection law and an independent regulator. Ireland is under the EU GDPR, one of the strictest regimes, so the case for adequacy is strong. South Africa (POPIA) also has a law and a regulator. **Both regions are a transfer out of Nigeria**: Cape Town is not "local" in law.
 
-**What changes in 2027.** In June 2026 the Central Bank of Nigeria issued a circular requiring payment transaction data generated in Nigeria to be stored and managed in Nigeria from 1 January 2027, and press reports list microfinance banks among the institutions covered. Loan applications are not payment transactions, but loan payouts and repayments would be. Neither Ireland nor Cape Town meets that rule. The AWS option in Nigeria is the Lagos Local Zone, an extension of the Cape Town region that runs servers, containers and load balancers, but not managed databases.
+**What may change in 2027.** Press reports (Legal500, Techpoint Africa, BusinessDay) describe a June 2026 Central Bank of Nigeria circular requiring payment transaction data generated in Nigeria to be stored and managed in Nigeria from 1 January 2027, and list microfinance banks among the institutions covered. We have not read the circular itself, so Kestrel's compliance team must confirm it. Loan applications are not payment transactions, but loan payouts and repayments would be. Neither Ireland nor Cape Town meets that rule. The AWS option in Nigeria is the Lagos Local Zone, an extension of the Cape Town region that runs servers, containers and load balancers, but not managed databases.
 
 | | Ireland (chosen) | Cape Town |
 |---|---|---|
 | NDPA transfer | Needs adequacy or another ground; strong case (GDPR) | Needs adequacy or another ground (POPIA) |
-| CBN payment data from 2027 | Does not meet it | Does not meet it either; but it is the parent region of the Lagos Local Zone |
+| CBN payment data from 2027 (reported) | Does not meet it | Does not meet it either; but it is the parent region of the Lagos Local Zone |
 | Services | Every service we use | Must be switched on per account; most services we use exist, but check each one before moving |
 | Cost | Lower | Generally higher for the same services |
 | Distance to Lagos | Measure from Kestrel's network before deciding | Measure; not automatically faster, because traffic may route through Europe |
@@ -128,7 +128,7 @@ Savings 1 and 2 are estimates from AWS's published discounts and should be price
 | Pillar | Strongest point | Weakest point |
 |---|---|---|
 | Operational excellence | Everything is code, every change is planned on a pull request, and every alarm links to a runbook step | One account and one person's GitHub approval; no on-call rota or tested incident drill with the client team yet |
-| Security | No path from the servers to the internet; BVN encrypted with a key the application cannot use to decrypt; no stored credentials anywhere | Deployment roles are full administrators of the shared account (ADR 0001, 0003) |
+| Security | No internet route from the servers; BVN encrypted with a key the application cannot use to decrypt; no stored credentials anywhere | Deployment roles are full administrators of the shared account (ADR 0001, 0003) |
 | Reliability | Two data centres for servers and database; automatic rollback of a bad release; measured restore in 21 minutes | The AWS Fargate limit of 12 processors can block a release after a big scale out; needs a limit increase before go-live |
 | Performance efficiency | 50 requests a second answered in 0.058 seconds with servers at a third of their capacity | Scaling overshoots (5 needed, 13 started) because new servers take minutes to count as ready |
 | Cost optimisation | Within budget at Kestrel's size, with extra capacity paid for only on payday days | Fixed private connection cost (about USD 112 a month) is the largest single line at today's traffic |
@@ -139,5 +139,15 @@ Savings 1 and 2 are estimates from AWS's published discounts and should be price
 1. Ask AWS for a Fargate processor limit of at least 40 (free) and freeze deployments from the 25th to the 28th.
 2. Move to separate AWS accounts before go-live.
 3. Provide a domain so customers get a publicly trusted certificate.
-4. Get the legal reading on the CBN circular before January 2027.
+4. Ask Kestrel's compliance team to confirm the CBN circular and the lawful basis for processing data outside Nigeria. Both Ireland and Cape Town are outside Nigeria.
 5. Repeat the restore drill every quarter and the load test before each payday season.
+
+**Known limitations, stated honestly:**
+
+- **Saving and queueing are two steps.** The API saves an application, then sends it to the scoring queue. A crash or a lost reply between the two can leave an application unscored or removed. The fix is a transactional outbox (save the application and its queue job together, then publish).
+- **Notifications are at least once.** A decision is never stored twice, but a notification can repeat with a different timestamp. Subscribers must ignore repeats by application ID.
+- **Deploy roles are full administrators** of the shared account, so dev credentials could change prod (ADR 0001, 0003).
+- **The application uses the database's main user.** Separate users for the API, the scorer and schema changes would limit what a compromised task could do.
+- **The load balancer to application hop is plain HTTP** inside the private network.
+- **The load test checked responses, not final decisions.** It proves responsiveness at the payday peak, not how long scoring took under that load.
+

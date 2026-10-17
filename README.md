@@ -154,4 +154,4 @@ Remove in the reverse order of creation, so nothing is left behind that still co
 
 ## Cost
 
-Spend is capped by the USD 40 budget. Hourly billed resources (the load balancer, Fargate tasks, NAT or VPC endpoints, RDS) exist only in the dev and prod stacks. Destroy dev at the end of each working session. The bootstrap and audit stacks cost under USD 0.10 a day together.
+The USD 40 budget sends alerts; it does not stop charges. Spend is controlled by checking cost, keeping tests short and tearing down. Hourly billed resources (the load balancer, Fargate tasks, NAT or VPC endpoints, RDS) exist only in the dev and prod stacks. Destroy dev at the end of each working session. The bootstrap and audit stacks cost under USD 0.10 a day together.
