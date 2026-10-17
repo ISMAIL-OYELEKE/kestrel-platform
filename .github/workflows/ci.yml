@@ -42,6 +42,14 @@ jobs:
         env:
           TEST_DATABASE_URL: postgresql://kestrel:kestrel@localhost:5432/kestrel
 
+  scripts:
+    name: script tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rollback verifier
+        run: scripts/tests/verify-rollback-test.sh
+
   terraform:
     name: terraform format and validate
     runs-on: ubuntu-24.04
