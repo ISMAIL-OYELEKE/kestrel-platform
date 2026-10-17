@@ -10,7 +10,9 @@ on:
       environment:
         description: Environment to run the demo in
         type: choice
-        options: [dev, prod]
+        # Dev only: a manual run would otherwise put a broken image into prod without the
+        # pull request and approval checks that every prod release goes through.
+        options: [dev]
         default: dev
 
 # Shares the deploy queue, so the demo never overlaps a real deployment.
@@ -61,6 +63,7 @@ jobs:
             --query 'taskDefinition.containerDefinitions[0].image' --output text)
           echo "Running now: ${TASKDEF##*/} with image ${IMAGE##*/}"
           {
+            echo "GOOD_TASKDEF=$TASKDEF"
             echo "GOOD_IMAGE=$IMAGE"
             echo "GOOD_TAG=${IMAGE##*:}"
             echo "BROKEN_TAG=broken-${GITHUB_RUN_ID}"
@@ -79,16 +82,16 @@ jobs:
 
       - name: Deploy the broken image
         run: |
+          echo "START=$(date +%s)" >> "$GITHUB_ENV"
           terraform apply -input=false -lock-timeout=5m -auto-approve \
             -var-file="../envs/$ENV/terraform.tfvars" -var api_image_tag="$BROKEN_TAG"
 
+      # Passes only if ECS itself logged the failed deployment and the rollback, and the exact
+      # previous task definition is running healthy again. An AWS error or a timeout fails the step.
       - name: Expect ECS to roll back to the working version
         run: |
-          if ../../scripts/verify-deploy.sh; then
-            echo "The broken image is running, so the rollback did not happen. Demo failed."
-            exit 1
-          fi
-          echo "As expected: the broken version never became healthy and ECS rolled back."
+          BROKEN_TASKDEF=$(terraform output -raw api_task_definition_arn)
+          ../../scripts/verify-rollback.sh "$GOOD_TASKDEF" "$BROKEN_TASKDEF" "$START"
 
       # Terraform's state still records the broken task definition, so deploy the working
       # version again. Runs even if an earlier step failed, so the environment is never left broken.
