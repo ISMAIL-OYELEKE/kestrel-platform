@@ -155,3 +155,12 @@ Remove in the reverse order of creation, so nothing is left behind that still co
 ## Cost
 
 The USD 40 budget sends alerts; it does not stop charges. Spend is controlled by checking cost, keeping tests short and tearing down. Hourly billed resources (the load balancer, Fargate tasks, NAT or VPC endpoints, RDS) exist only in the dev and prod stacks. Destroy dev at the end of each working session. The bootstrap and audit stacks cost under USD 0.10 a day together.
+
+---
+
+## Links
+
+- Case study on my portfolio: https://ismailoyeleke.com/projects/kestrel-loan-platform
+
+---
+*Created by [Oyeleke Ismail](https://www.linkedin.com/in/ismail-oyeleke-6930b6317/) - AWS Certified Solutions Architect*
