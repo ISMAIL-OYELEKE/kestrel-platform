@@ -161,6 +161,9 @@ The USD 40 budget sends alerts; it does not stop charges. Spend is controlled by
 ## Links
 
 - Case study on my portfolio: https://ismailoyeleke.com/projects/kestrel-loan-platform
+- Video walkthrough on YouTube: https://youtu.be/dCuNLgKuf78
+- Write-up on Medium: https://medium.com/@ismailoyeleke2003/i-built-a-loan-platform-on-aws-broke-it-on-purpose-and-tore-it-down-for-usd-9-20-e758f948ecd4
+- LinkedIn post: https://lnkd.in/p/d_PWxA6Z
 
 ---
 *Created by [Oyeleke Ismail](https://www.linkedin.com/in/ismail-oyeleke-6930b6317/) - AWS Certified Solutions Architect*
