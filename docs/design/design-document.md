@@ -1,6 +1,6 @@
 # Kestrel Microfinance Bank: loan platform on AWS
 
-Design document, 16 October 2026. Prepared by Ismail Oyeleke for SkyGrid. Written for readers who are not engineers; the technical detail is in the repository, and each decision links to its decision record (ADR).
+Design document, 16 October 2026. Prepared by Ismail Oyeleke. Written for readers who are not engineers; the technical detail is in the repository, and each decision links to its decision record (ADR).
 
 ## 1. Summary
 
